@@ -154,13 +154,4 @@ app.use(function(req, res) {
     }
 });
 
-if (!isVercel) {
-    var mainApp;
-    try {
-        mainApp = require('../server/app');
-    } catch (e) {
-        console.error('Main app load failed:', e.message);
-    }
-}
-
 module.exports = app;

@@ -1,20 +1,14 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "server/**",
-          "index.html",
-          "tech-map.html",
-          "admin/**"
-        ]
-      }
+  "functions": {
+    "api/index.js": {
+      "includeFiles": [
+        "index.html",
+        "tech-map.html",
+        "admin/**"
+      ]
     }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/api/index" }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
   ]
 }
