@@ -14,7 +14,11 @@ if (!isVercel) {
     }
 }
 
-require('./init-db');
+try {
+    require('./init-db');
+} catch (e) {
+    console.error('数据库初始化失败:', e.message);
+}
 
 const authRoutes = require('./routes/auth');
 const herbRoutes = require('./routes/herbs');
@@ -38,6 +42,8 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+var staticRoot = isVercel ? path.join(process.cwd()) : path.join(__dirname, '..');
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     setHeaders: function(res, filePath) {
         var ext = path.extname(filePath).toLowerCase();
@@ -57,8 +63,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
         res.setHeader('Cache-Control', 'public, max-age=86400');
     }
 }));
-app.use('/', express.static(path.join(__dirname, '..')));
-app.use('/admin', express.static(path.join(__dirname, '..', 'admin')));
+app.use(express.static(staticRoot));
+app.use('/admin', express.static(path.join(staticRoot, 'admin')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/herbs', herbRoutes);
@@ -74,7 +80,8 @@ app.get('/api/health', (req, res) => {
     res.json({ 
         success: true, 
         message: '中医药文化传播地图 API 服务正常',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        vercel: isVercel
     });
 });
 
@@ -92,24 +99,28 @@ app.get('/api/debug/images', (req, res) => {
     } catch (e) {
         result.error = e.message;
     }
-    var db = require('./init-db');
-    db.all('SELECT id, name, image_url FROM herbs WHERE image_url IS NOT NULL', function(err, rows) {
-        if (!err && rows) {
-            result.dbImages = rows.map(function(r) {
-                var url = r.image_url || '';
-                var relativePath = url.replace(/^\/+/, '');
-                var filePath = path.join(__dirname, relativePath);
-                var fileExists = false;
-                try { fileExists = fs.existsSync(filePath); } catch(e) {}
-                return { id: r.id, name: r.name, image_url: url, fileExists: fileExists };
-            });
-        }
-        res.json({ success: true, data: result });
-    });
+    try {
+        var db = require('./init-db');
+        db.all('SELECT id, name, image_url FROM herbs WHERE image_url IS NOT NULL', function(err, rows) {
+            if (!err && rows) {
+                result.dbImages = rows.map(function(r) {
+                    var url = r.image_url || '';
+                    var relativePath = url.replace(/^\/+/, '');
+                    var filePath = path.join(__dirname, relativePath);
+                    var fileExists = false;
+                    try { fileExists = fs.existsSync(filePath); } catch(e) {}
+                    return { id: r.id, name: r.name, image_url: url, fileExists: fileExists };
+                });
+            }
+            res.json({ success: true, data: result });
+        });
+    } catch (e) {
+        res.json({ success: true, data: result, dbError: e.message });
+    }
 });
 
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+    res.sendFile(path.join(staticRoot, 'admin', 'index.html'));
 });
 
 app.use((err, req, res, next) => {
@@ -124,32 +135,31 @@ app.use((req, res) => {
     if (req.path.startsWith('/api/')) {
         res.status(404).json({ success: false, message: '接口不存在' });
     } else if (req.path.startsWith('/admin')) {
-        res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+        res.sendFile(path.join(staticRoot, 'admin', 'index.html'));
     } else {
-        res.sendFile(path.join(__dirname, '..', 'index.html'));
+        res.sendFile(path.join(staticRoot, 'index.html'));
     }
 });
 
-function startServer(port) {
-    const server = app.listen(port, '0.0.0.0', () => {
-        console.log(`Server started on port ${port}`);
-    });
-    
-    server.on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            if (process.env.RENDER) {
-                console.error('Port ' + port + ' in use on Render, cannot increment');
-                process.exit(1);
-            }
-            console.log(`⚠️  端口 ${port} 被占用，尝试端口 ${port + 1}...`);
-            startServer(port + 1);
-        } else {
-            console.error('启动失败:', err.message);
-        }
-    });
-}
-
 if (!isVercel) {
+    function startServer(port) {
+        const server = app.listen(port, '0.0.0.0', () => {
+            console.log(`Server started on port ${port}`);
+        });
+        
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                if (process.env.RENDER) {
+                    console.error('Port ' + port + ' in use on Render, cannot increment');
+                    process.exit(1);
+                }
+                console.log(`⚠️  端口 ${port} 被占用，尝试端口 ${port + 1}...`);
+                startServer(port + 1);
+            } else {
+                console.error('启动失败:', err.message);
+            }
+        });
+    }
     startServer(PORT);
 }
 

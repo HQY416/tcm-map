@@ -6,15 +6,31 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": [
+          "server/**",
           "index.html",
           "tech-map.html",
-          "admin/**",
-          "server/uploads/**"
+          "admin/**"
         ]
       }
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "tech-map.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "admin/index.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/api/index" }
+    { "src": "/api/(.*)", "dest": "/api/index" },
+    { "src": "/uploads/(.*)", "dest": "/api/index" },
+    { "src": "/admin", "dest": "/admin/index.html" },
+    { "src": "/tech-map", "dest": "/tech-map.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
