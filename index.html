@@ -1,0 +1,3813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道地药材 · 中华瑰宝 - 中医药交互式地图</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --herb-green: #4A7C59;
+            --herb-green-dark: #3D6B4A;
+            --herb-green-light: #E8F0EA;
+            --earth-brown: #8B5A2B;
+            --warm-beige: #C49A6C;
+            --bg-cream: #F5F0E8;
+            --text-dark: #2D3436;
+            --text-gray: #4A4A4A;
+            --text-light: #8E8E8E;
+            --border-gray: #E0E0E0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
+        .title-font { font-family: 'Noto Serif SC', serif; }
+        .app-container {
+            max-width: 430px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+        }
+        @media (min-width: 768px) { .app-container { max-width: 768px; } }
+        @media (min-width: 1024px) { .app-container { max-width: 1024px; } }
+
+        .top-nav {
+            background: linear-gradient(135deg, var(--herb-green) 0%, var(--herb-green-dark) 100%);
+            color: white;
+            padding: 50px 20px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .back-btn, .icon-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-btn:hover, .icon-btn:hover { background: rgba(255,255,255,0.3); }
+        .page-title { font-size: 18px; font-weight: 600; }
+        .nav-actions { display: flex; gap: 10px; }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 0 16px;
+            position: relative;
+        }
+        .search-bar .search-icon {
+            margin-right: 10px;
+            color: var(--herb-green);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: var(--text-dark);
+            padding: 10px 0;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .search-bar input::placeholder { color: var(--text-light); }
+        .search-bar .search-clear {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            display: none;
+            flex-shrink: 0;
+        }
+        .search-bar .search-clear.visible { display: block; }
+        .search-bar .search-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--herb-green-light);
+            border-top-color: var(--herb-green);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            flex-shrink: 0;
+            display: none;
+        }
+        .search-bar .search-spinner.visible { display: block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .breadcrumb {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid var(--border-gray);
+        }
+        .breadcrumb-path {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-light);
+            flex-wrap: wrap;
+        }
+        .breadcrumb-item { cursor: pointer; transition: color 0.3s; }
+        .breadcrumb-item:hover { color: var(--herb-green); }
+        .breadcrumb-item.active { color: var(--herb-green); font-weight: 500; }
+        .breadcrumb-sep { color: var(--border-gray); }
+
+        .map-chart-container {
+            width: 100%;
+            height: 450px;
+            position: relative;
+            background: #F8FBF9;
+        }
+        @media (min-width: 768px) { .map-chart-container { height: 550px; } }
+
+        .map-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(248,251,249,0.9);
+            z-index: 10;
+        }
+        .map-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--herb-green-light);
+            border-top-color: var(--herb-green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+        .map-loading .loading-text { font-size: 14px; color: var(--text-light); }
+
+        .map-legend {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(255,255,255,0.92);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 11px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 5;
+        }
+        .legend-title { font-weight: 600; margin-bottom: 6px; color: var(--text-dark); }
+        .legend-bar {
+            width: 120px;
+            height: 10px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #E8F0EA, #4A7C59);
+            margin-bottom: 4px;
+        }
+        .legend-labels { display: flex; justify-content: space-between; color: var(--text-light); }
+
+        .content-section { padding: 20px; }
+        .section-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--herb-green);
+            border-radius: 2px;
+        }
+
+        .city-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (min-width: 768px) { .city-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1024px) { .city-grid { grid-template-columns: repeat(4, 1fr); } }
+
+        .city-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .city-card:hover {
+            border-color: var(--herb-green);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74,124,89,0.15);
+        }
+        .city-name { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text-dark); }
+        .city-herbs { font-size: 12px; color: var(--text-light); }
+        .city-icon { float: right; font-size: 24px; }
+
+        .herb-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        @media (min-width: 768px) { .herb-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        .herb-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .herb-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(74,124,89,0.2); }
+        .herb-image {
+            height: 120px;
+            background: linear-gradient(135deg, var(--herb-green-light) 0%, #D4E8D8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+        .herb-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .herb-image .herb-emoji-fallback {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .herb-image .img-skeleton {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, #e8f0ea 25%, #d4e8d8 50%, #e8f0ea 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .herb-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--herb-green);
+            color: white;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        .herb-info { padding: 12px; }
+        .herb-name { font-family: 'Noto Serif SC', serif; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .herb-nature {
+            display: inline-block;
+            background: var(--herb-green-light);
+            color: var(--herb-green);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+        }
+        .herb-efficacy { font-size: 12px; color: var(--text-light); line-height: 1.4; }
+
+        .herb-detail-header {
+            position: relative;
+            height: 280px;
+            background: linear-gradient(135deg, var(--herb-green-light) 0%, #D4E8D8 100%);
+        }
+        .detail-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            padding: 50px 15px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .detail-back-btn, .detail-action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        .detail-actions { display: flex; gap: 10px; }
+        .detail-action-btn.active { background: #FFE8E8; color: #E74C3C; }
+        .herb-detail-image {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            overflow: hidden;
+        }
+        .herb-detail-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .herb-detail-image .img-skeleton {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, #2d3436 25%, #3d4446 50%, #2d3436 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        .herb-gallery {
+            display: flex;
+            justify-content: center;
+            padding: 8px 0 0;
+        }
+        .herb-gallery-scroll {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 4px;
+        }
+        .herb-gallery-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .herb-gallery-thumb:hover {
+            border-color: #4A7C59;
+        }
+        .herb-gallery-thumb.active {
+            border-color: #4A7C59;
+            box-shadow: 0 0 0 2px rgba(74,124,89,0.3);
+        }
+        .detail-content {
+            background: white;
+            border-radius: 24px 24px 0 0;
+            margin-top: -20px;
+            position: relative;
+            padding: 25px 20px;
+        }
+        .detail-title { font-family: 'Noto Serif SC', serif; font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+        .detail-subtitle { font-size: 14px; color: var(--text-light); margin-bottom: 15px; }
+        .detail-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        .detail-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--herb-green-light);
+            color: var(--herb-green);
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 16px;
+        }
+        .detail-section { margin-bottom: 25px; }
+        .detail-section-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .detail-section-title::before {
+            content: '';
+            width: 3px;
+            height: 18px;
+            background: var(--warm-beige);
+            border-radius: 2px;
+        }
+        .efficacy-box {
+            background: linear-gradient(135deg, #FFF9F0 0%, var(--herb-green-light) 100%);
+            border-radius: 16px;
+            padding: 18px;
+            border-left: 4px solid var(--herb-green);
+        }
+        .efficacy-title { font-weight: 600; margin-bottom: 8px; color: var(--herb-green-dark); }
+        .efficacy-text { line-height: 1.8; font-size: 15px; }
+        .video-card {
+            background: #1a1a2e;
+            border-radius: 16px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .video-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(74,124,89,0.6) 0%, rgba(59,59,90,0.8) 100%);
+        }
+        .video-play-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s;
+        }
+        .video-card:hover .video-play-btn { background: rgba(255,255,255,0.4); transform: scale(1.1); }
+        .video-title { position: relative; z-index: 2; margin-top: 12px; font-weight: 500; }
+        .video-duration {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 2;
+        }
+        .recipe-carousel {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            scrollbar-width: none;
+        }
+        .recipe-carousel::-webkit-scrollbar { display: none; }
+        .recipe-card {
+            min-width: 140px;
+            background: #FFF9F0;
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .recipe-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .recipe-icon { font-size: 40px; margin-bottom: 8px; }
+        .recipe-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+        .recipe-desc { font-size: 11px; color: var(--text-light); }
+
+        .recipe-card.coming-soon {
+            background: linear-gradient(135deg, #F5F0E8 0%, #EDE7DB 100%);
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+            border: 1px dashed var(--warm-beige);
+        }
+        .recipe-card.coming-soon .recipe-icon { filter: grayscale(0.5) opacity(0.5); }
+        .recipe-card.coming-soon .recipe-name { color: var(--text-light); }
+        .recipe-card.coming-soon:hover { transform: none; box-shadow: none; }
+        .recipe-card.coming-soon .coming-soon-badge {
+            position: absolute;
+            top: 8px;
+            right: -20px;
+            background: var(--warm-beige);
+            color: white;
+            font-size: 9px;
+            padding: 2px 24px;
+            transform: rotate(45deg);
+            font-weight: 600;
+        }
+        .recipe-card.coming-soon .coming-soon-text {
+            font-size: 11px;
+            color: var(--warm-beige);
+            font-weight: 500;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+        .recipe-card.coming-soon .coming-soon-text::before {
+            content: '🌿';
+            font-size: 12px;
+        }
+
+        .video-card.coming-soon { cursor: default; }
+        .video-card.coming-soon .video-play-btn { display: none; }
+        .video-card.coming-soon .video-title { display: none; }
+        .video-card.coming-soon .video-duration { display: none; }
+        .video-card.coming-soon .coming-soon-overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 3; background: rgba(0,0,0,0.45);
+        }
+        .video-card.coming-soon .coming-soon-overlay .cs-icon { font-size: 36px; margin-bottom: 10px; }
+        .video-card.coming-soon .coming-soon-overlay .cs-text {
+            color: #fff; font-size: 15px; font-weight: 600;
+            text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+            letter-spacing: 2px;
+        }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+        .empty-icon { font-size: 64px; margin-bottom: 16px; }
+        .empty-text { font-size: 16px; }
+
+        .search-results-container { padding: 0 20px 20px; }
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-gray);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-result-item:hover { background: var(--herb-green-light); margin: 0 -20px; padding: 14px 20px; }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-result-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: var(--herb-green-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .search-result-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .search-result-info { flex: 1; min-width: 0; }
+        .search-result-name { font-weight: 600; font-size: 15px; color: var(--text-dark); margin-bottom: 2px; }
+        .search-result-name mark { background: #FFF3CD; color: var(--text-dark); padding: 0 2px; border-radius: 2px; }
+        .search-result-meta { font-size: 12px; color: var(--text-light); }
+        .search-result-arrow { color: var(--text-light); font-size: 14px; flex-shrink: 0; }
+        .search-status { padding: 16px 20px; font-size: 14px; color: var(--text-light); }
+        .search-hot-tags { padding: 16px 20px; }
+        .search-hot-tags h4 { font-size: 13px; color: var(--text-light); margin-bottom: 10px; }
+        .hot-tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+        .hot-tag {
+            background: var(--herb-green-light);
+            color: var(--herb-green);
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .hot-tag:hover { background: var(--herb-green); color: white; }
+
+        .coming-soon-toast {
+            position: fixed;
+            z-index: 9999;
+            background: rgba(45, 52, 54, 0.92);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px) scale(0.9);
+            transition: opacity 300ms ease, transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .coming-soon-toast.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .coming-soon-toast .toast-icon {
+            font-size: 16px;
+        }
+        .coming-soon-toast .toast-province {
+            color: #C49A6C;
+            font-weight: 600;
+        }
+
+        .map-chart-container[role="img"] {
+            outline: none;
+        }
+        .map-chart-container:focus-visible {
+            box-shadow: 0 0 0 3px rgba(74,124,89,0.5);
+        }
+
+        .page-transition {
+            animation: pageSlideIn 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        @keyframes pageSlideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .detail-transition {
+            animation: detailSlideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        @keyframes detailSlideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .info-card-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .info-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #F5F5F5;
+            font-size: 14px;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label {
+            width: 80px;
+            flex-shrink: 0;
+            color: var(--text-light);
+            font-size: 13px;
+        }
+        .info-value { flex: 1; color: var(--text-dark); line-height: 1.6; }
+        .warning-box {
+            background: #FFF8E1;
+            border-left: 4px solid #FF9800;
+            border-radius: 0 12px 12px 0;
+            padding: 14px 16px;
+            margin-top: 16px;
+        }
+        .warning-title { color: #E65100; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        .warning-text { font-size: 13px; color: #5D4037; line-height: 1.7; }
+        .dosage-box {
+            background: #E8F5E9;
+            border-left: 4px solid #4CAF50;
+            border-radius: 0 12px 12px 0;
+            padding: 14px 16px;
+            margin-top: 12px;
+        }
+        .dosage-title { color: #2E7D32; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        .dosage-text { font-size: 13px; color: #33691E; line-height: 1.7; }
+        .modern-box {
+            background: #E3F2FD;
+            border-left: 4px solid #2196F3;
+            border-radius: 0 12px 12px 0;
+            padding: 14px 16px;
+            margin-top: 12px;
+        }
+        .modern-title { color: #1565C0; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        .modern-text { font-size: 13px; color: #1A237E; line-height: 1.7; }
+
+        .comment-section { margin-top: 24px; }
+        .comment-section-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px; font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .comment-count {
+            background: var(--herb-green);
+            color: #fff; font-size: 12px;
+            padding: 2px 10px; border-radius: 10px;
+            font-weight: 500;
+        }
+        .comment-form {
+            background: #FAFAF8;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .comment-form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .comment-input {
+            flex: 1;
+            border: 1.5px solid #E0DDD5;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+            font-family: inherit;
+        }
+        .comment-input:focus { border-color: var(--herb-green); }
+        .comment-input::placeholder { color: #B0ADA5; }
+        .comment-textarea {
+            width: 100%;
+            border: 1.5px solid #E0DDD5;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            min-height: 80px;
+            transition: border-color 0.2s;
+            background: #fff;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .comment-textarea:focus { border-color: var(--herb-green); }
+        .comment-textarea::placeholder { color: #B0ADA5; }
+        .comment-form-footer {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-top: 10px;
+        }
+        .comment-char-count { font-size: 12px; color: #B0ADA5; transition: color 0.2s; }
+        .comment-char-count.char-warn { color: #F0A030; font-weight: 500; }
+        .comment-char-count.char-error { color: #E74C3C; font-weight: 600; }
+        .comment-submit-btn {
+            background: var(--herb-green);
+            color: #fff; border: none;
+            border-radius: 20px;
+            padding: 8px 24px;
+            font-size: 14px; font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .comment-submit-btn:hover { background: #3D7A4F; transform: scale(1.02); }
+        .comment-submit-btn:disabled { background: #B0ADA5; cursor: not-allowed; transform: none; }
+        .comment-submit-btn.loading { opacity: 0.7; pointer-events: none; }
+        .comment-list { display: flex; flex-direction: column; gap: 12px; }
+        .comment-item {
+            background: #FAFAF8;
+            border-radius: 14px;
+            padding: 14px 16px;
+            animation: commentFadeIn 0.3s ease;
+        }
+        @keyframes commentFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .comment-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 8px;
+        }
+        .comment-nickname {
+            font-weight: 600; font-size: 14px;
+            color: var(--herb-green);
+        }
+        .comment-time { font-size: 12px; color: #B0ADA5; }
+        .comment-content { font-size: 14px; color: var(--text-dark); line-height: 1.7; word-break: break-all; }
+        .comment-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #B0ADA5;
+        }
+        .comment-empty-icon { font-size: 48px; margin-bottom: 10px; }
+        .comment-empty-text { font-size: 16px; font-weight: 500; color: var(--text-light); }
+        .comment-empty-sub { font-size: 13px; margin-top: 6px; }
+        .comment-loading { text-align: center; padding: 20px; color: #B0ADA5; font-size: 14px; }
+        .comment-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 0 8px;
+            border-top: 1px solid #E8E5DD;
+            margin-top: 12px;
+        }
+        .comment-page-btn {
+            padding: 6px 14px;
+            border: 1px solid #D4D0C8;
+            border-radius: 8px;
+            background: #fff;
+            color: #5A574F;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .comment-page-btn:hover:not(:disabled) {
+            background: #4A7C59;
+            color: #fff;
+            border-color: #4A7C59;
+        }
+        .comment-page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .comment-page-info {
+            font-size: 13px;
+            color: #8E8B83;
+            min-width: 60px;
+            text-align: center;
+        }
+        .comment-toast {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(45,52,54,0.92);
+            color: #fff; padding: 12px 24px;
+            border-radius: 12px; font-size: 14px;
+            z-index: 9999; opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+        }
+        .comment-toast.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .like-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .like-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #FAFAF8;
+            border: 1.5px solid #E0DDD5;
+            border-radius: 20px;
+            padding: 6px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .like-btn:hover { border-color: var(--herb-green); background: #f0f7f2; }
+        .like-btn.liked { border-color: #e74c3c; background: #fef5f5; }
+        .like-btn.liked .like-icon { animation: likePopIn 0.3s ease; }
+        @keyframes likePopIn {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+        .like-icon { font-size: 18px; }
+        .like-count { font-weight: 500; color: var(--text-dark); }
+
+        .feedback-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--herb-green);
+            color: #fff;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(74,124,89,0.4);
+            z-index: 100;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .feedback-fab:hover { transform: scale(1.1); box-shadow: 0 6px 24px rgba(74,124,89,0.5); }
+        .feedback-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .feedback-modal.visible { opacity: 1; pointer-events: auto; }
+        .feedback-modal-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px;
+            width: 90%;
+            max-width: 440px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        .feedback-modal.visible .feedback-modal-content { transform: translateY(0); }
+        .feedback-modal-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+        .feedback-type-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .feedback-type-btn {
+            padding: 6px 16px;
+            border-radius: 16px;
+            border: 1.5px solid #E0DDD5;
+            background: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .feedback-type-btn.active { border-color: var(--herb-green); background: #f0f7f2; color: var(--herb-green); font-weight: 500; }
+        .feedback-textarea {
+            width: 100%;
+            border: 1.5px solid #E0DDD5;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            min-height: 100px;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .feedback-textarea:focus { border-color: var(--herb-green); }
+        .feedback-char-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 6px;
+        }
+        .feedback-char-count { font-size: 11px; color: var(--text-light); transition: color 0.2s; }
+        .feedback-char-count.char-warn { color: #F0A030; font-weight: 500; }
+        .feedback-char-count.char-error { color: #E74C3C; font-weight: 600; }
+        .feedback-char-warn { font-size: 11px; color: #E74C3C; }
+        .feedback-input {
+            width: 100%;
+            border: 1.5px solid #E0DDD5;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            outline: none;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .feedback-input:focus { border-color: var(--herb-green); }
+        .feedback-submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--herb-green);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+        .feedback-submit-btn:hover { background: #3D7A4F; }
+        .feedback-submit-btn:disabled { background: #B0ADA5; cursor: not-allowed; }
+        .recipe-detail-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .recipe-detail-modal.visible { opacity: 1; pointer-events: auto; }
+        .recipe-detail-modal-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        .recipe-detail-modal.visible .recipe-detail-modal-content { transform: translateY(0); }
+        .recipe-detail-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .recipe-detail-modal-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        .recipe-detail-modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #f0f0f0;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .recipe-detail-modal-close:hover { background: #e0e0e0; }
+        .recipe-detail-label {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+        .recipe-detail-ingredients { margin-bottom: 16px; }
+        .recipe-detail-ingredients ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .recipe-detail-ingredients li {
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            color: var(--text-dark);
+            padding-left: 16px;
+            position: relative;
+        }
+        .recipe-detail-ingredients li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--herb-green);
+        }
+        .recipe-detail-efficacy { margin-bottom: 16px; }
+        .recipe-detail-efficacy p {
+            font-size: 14px;
+            color: var(--herb-green);
+            background: #f0f7f2;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin: 0;
+        }
+        .recipe-detail-content { margin-bottom: 16px; }
+        .recipe-detail-content p { font-size: 14px; line-height: 1.8; color: var(--text-dark); margin: 0; }
+        .recipe-detail-content strong { color: var(--herb-green); }
+        .recipe-detail-author {
+            font-size: 12px;
+            color: var(--text-light);
+            text-align: right;
+            padding-top: 8px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .recipe-like-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
+        .all-recipes-section { padding: 16px; }
+        .all-recipes-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .all-recipes-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        .recipe-filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .recipe-filter-btn {
+            padding: 5px 14px;
+            border-radius: 16px;
+            border: 1.5px solid #E0DDD5;
+            background: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .recipe-filter-btn.active { border-color: var(--herb-green); background: #f0f7f2; color: var(--herb-green); font-weight: 500; }
+        .recipe-sort-select {
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1.5px solid #E0DDD5;
+            font-size: 12px;
+            outline: none;
+            background: #fff;
+        }
+        .recipe-list { display: flex; flex-direction: column; gap: 12px; }
+        .recipe-list-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .recipe-list-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .recipe-list-card-title { font-weight: 600; font-size: 15px; color: var(--text-dark); margin-bottom: 6px; }
+        .recipe-list-card-efficacy { font-size: 12px; color: var(--herb-green); margin-bottom: 6px; }
+        .recipe-list-card-meta { font-size: 11px; color: var(--text-light); display: flex; gap: 12px; }
+        .recipe-list-empty { text-align: center; padding: 40px 20px; color: var(--text-light); font-size: 14px; }
+        .feedback-page { padding: 16px; padding-bottom: 40px; }
+        .feedback-page-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 20px 0;
+        }
+        .feedback-page-icon { font-size: 48px; margin-bottom: 8px; }
+        .feedback-page-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 6px;
+        }
+        .feedback-page-desc { font-size: 13px; color: var(--text-light); line-height: 1.6; }
+        .feedback-form-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+        }
+        .fb-page-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+        .fb-page-hint { font-weight: 400; color: var(--text-light); font-size: 12px; }
+        .fb-page-type-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
+        .fb-page-type-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1.5px solid #E0DDD5;
+            background: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .fb-page-type-btn.active { border-color: var(--herb-green); background: #f0f7f2; color: var(--herb-green); font-weight: 500; }
+        .fb-page-textarea {
+            width: 100%;
+            border: 1.5px solid #E0DDD5;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 14px;
+            min-height: 7.5em;
+            max-height: 50vh;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+            overflow-y: auto;
+        }
+        .fb-page-textarea:focus { border-color: var(--herb-green); }
+        .fb-page-textarea.warn-border { border-color: #F0A030; }
+        .fb-page-textarea.error-border { border-color: #E74C3C; }
+        .fb-page-char-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        .fb-page-char-count { font-size: 12px; color: var(--text-light); transition: color 0.2s; }
+        .fb-page-char-count.char-warn { color: #F0A030; font-weight: 500; }
+        .fb-page-char-count.char-error { color: #E74C3C; font-weight: 600; }
+        .fb-page-char-warn { font-size: 12px; color: #E74C3C; line-height: 1.4; }
+        .fb-page-limit-hint {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        .fb-page-upload-area {
+            border: 2px dashed #E0DDD5;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fb-page-upload-area:hover { border-color: var(--herb-green); background: #f0f7f2; }
+        .fb-page-upload-icon { font-size: 32px; margin-bottom: 6px; }
+        .fb-page-upload-text { font-size: 13px; color: var(--text-light); }
+        .fb-page-upload-hint { font-size: 11px; color: #B0ADA5; margin-top: 4px; }
+        .fb-page-upload-preview { position: relative; display: inline-block; }
+        .fb-page-upload-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            object-fit: contain;
+        }
+        .fb-page-remove-img {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #E74C3C;
+            color: #fff;
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .fb-page-input {
+            width: 100%;
+            border: 1.5px solid #E0DDD5;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 14px;
+            outline: none;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .fb-page-input:focus { border-color: var(--herb-green); }
+        .fb-page-submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--herb-green) 0%, var(--herb-green-dark) 100%);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        .fb-page-submit-btn:hover { box-shadow: 0 4px 16px rgba(74,124,89,0.4); }
+        .fb-page-submit-btn:disabled { background: #B0ADA5; cursor: not-allowed; box-shadow: none; }
+        .fb-page-success {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .fb-page-success-icon { font-size: 56px; margin-bottom: 16px; }
+        .fb-page-success-title { font-size: 20px; font-weight: 600; color: var(--text-dark); margin-bottom: 10px; }
+        .fb-page-success-desc { font-size: 14px; color: var(--text-light); line-height: 1.7; }
+        .fb-page-success-back {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 28px;
+            background: var(--herb-green);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        @media (max-width: 480px) {
+            .feedback-page { padding: 12px; }
+            .feedback-form-card { padding: 16px; }
+            .fb-page-type-btn { padding: 6px 12px; font-size: 12px; }
+            .fb-page-textarea { min-height: 6em; padding: 12px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <button class="feedback-fab" id="feedback-fab-btn" onclick="openFeedbackModal()" title="意见反馈">📝</button>
+    <div class="feedback-modal" id="feedback-modal" onclick="if(event.target===this)closeFeedbackModal()">
+        <div class="feedback-modal-content">
+            <div class="feedback-modal-title">📝 意见反馈</div>
+            <div class="feedback-type-group">
+                <button class="feedback-type-btn active" onclick="selectFeedbackType('功能异常',this)">功能异常</button>
+                <button class="feedback-type-btn" onclick="selectFeedbackType('内容建议',this)">内容建议</button>
+                <button class="feedback-type-btn" onclick="selectFeedbackType('其他问题',this)">其他问题</button>
+            </div>
+            <textarea class="feedback-textarea" id="feedback-content" placeholder="请详细描述您遇到的问题或建议..." maxlength="1000" oninput="updateGlobalFbCharCount()"></textarea>
+            <div class="feedback-char-row">
+                <span class="feedback-char-warn" id="feedback-char-warn" style="display:none"></span>
+                <span class="feedback-char-count" id="feedback-char-count">已输入0字/1000字</span>
+            </div>
+            <div style="height:12px"></div>
+            <input class="feedback-input" id="feedback-contact" type="text" placeholder="联系方式（选填，方便我们回复您）" maxlength="100">
+            <button class="feedback-submit-btn" onclick="submitFeedback()">提交反馈</button>
+        </div>
+    </div>
+    <div class="recipe-detail-modal" id="recipe-detail-modal" onclick="if(event.target===this)closeRecipeModal()">
+        <div class="recipe-detail-modal-content">
+            <div class="recipe-detail-modal-header">
+                <div class="recipe-detail-modal-title">🍲 食谱详情</div>
+                <button class="recipe-detail-modal-close" onclick="closeRecipeModal()">✕</button>
+            </div>
+            <div class="recipe-detail-modal-body"></div>
+        </div>
+    </div>
+    <div class="app-container" id="app"></div>
+
+    <script>
+        const herbImages = {
+            '1': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Ficus%20hirta%20root%20slices%2C%20brownish%20root%20bark%20cross-section%20with%20five-lobed%20leaves%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '2': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Ganoderma%20lucidum%2C%20reddish-brown%20kidney-shaped%20cap%20with%20lacquered%20shiny%20surface%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '3': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Anoectochilus%20roxburghii%2C%20orchid%20plant%20with%20golden%20veins%20on%20dark%20green%20leaves%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '4': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Morinda%20officinalis%2C%20cylindrical%20root%20with%20grayish-yellow%20surface%20and%20fleshy%20texture%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '5': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Polygonum%20multiflorum%2C%20irregular%20tuberous%20root%20with%20reddish-brown%20surface%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '6': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Dendrobium%2C%20green%20segmented%20stems%20of%20orchid%20plant%20with%20distinct%20nodes%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '7': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20dried%20Citrus%20reticulata%20peel%2C%20brownish-red%20outer%20surface%20and%20white%20inner%20surface%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '8': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Citrus%20reticulata%20fruit%2C%20orange-yellow%20citrus%20fruit%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '9': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20dried%20Citrus%20grandis%20peel%2C%20yellowish-green%20with%20fine%20soft%20fuzz%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '10': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Aquilaria%20sinensis%20agarwood%2C%20dark%20brownish-black%20wood%20block%20with%20resin%20lines%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '11': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Amomum%20villosum%2C%20oval%20fruit%20with%20soft%20spines%20on%20surface%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '12': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Borneol%20crystal%2C%20white%20translucent%20flaky%20crystals%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '13': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Ficus%20hirta%20from%20Meizhou%2C%20brownish%20root%20bark%20slices%20with%20five-lobed%20leaves%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '14': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Bombax%20ceiba%20flower%2C%20bright%20red%20five-petal%20flower%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '15': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Plumeria%20rubra%20flower%2C%20white%20petals%20with%20yellow%20center%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '16': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Polygonatum%20odoratum%2C%20yellowish-white%20cylindrical%20rhizome%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '17': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Lilium%20bulb%2C%20white%20fleshy%20scale%20leaves%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '18': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Isodon%20striatus%2C%20green%20herbaceous%20plant%20with%20serrated%20leaves%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '19': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Gynostemma%20pentaphyllum%2C%20green%20vine%20with%20five%20leaflets%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '20': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Aquilaria%20sinensis%20Guanxiang%20agarwood%20from%20Dongguan%2C%20dark%20brownish-black%20wood%20block%20with%20rich%20resin%20lines%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '21': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20dried%20Citrus%20reticulata%20peel%20from%20Foshan%2C%20brownish-red%20outer%20surface%20and%20white%20inner%20surface%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '22': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Hedyotis%20diffusa%2C%20tiny%20white%20flowers%20and%20narrow%20linear%20leaves%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '23': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Houttuynia%20cordata%2C%20heart-shaped%20leaves%20and%20white%20spike%20inflorescence%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '24': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Bungarus%20multicinctus%20dried%20specimen%2C%20black%20and%20white%20banded%20snake%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '25': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Canarium%20album%2C%20greenish%20oval%20fruit%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '26': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Phyllanthus%20emblica%2C%20yellowish-green%20spherical%20small%20fruit%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '27': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20dried%20Citrus%20tangerine%20peel%20from%20Chaozhou%2C%20reddish%20dried%20peel%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '28': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Citrus%20medica%2C%20yellow%20finger-shaped%20fruit%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '29': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Artocarpus%20heterophyllus%2C%20large%20green%20fruit%20with%20spiky%20surface%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '30': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Alpinia%20officinarum%2C%20brownish-red%20rhizome%20slices%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '31': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Hippocampus%20dried%20seahorse%20specimen%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '32': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Haliotis%20abalone%2C%20shell%20with%20abalone%20meat%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '33': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Prunus%20armeniaca%2C%20brown%20flat%20oval%20seeds%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd',
+            '34': 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20medicine%20herb%20Smilax%20glabra%2C%20brownish%20irregular%20tuber%20slices%2C%20white%20background%2C%20high%20quality%20photograph&image_size=square_hd'
+        };
+
+        const imageCache = {};
+        const imageRetryCount = {};
+        const MAX_RETRIES = 3;
+        var herbMarkerIcons = {};
+        var herbMarkerIconsReady = false;
+        var markerIconCallbacks = [];
+
+        function createCircularIcon(img, size) {
+            var canvas = document.createElement('canvas');
+            var dpr = window.devicePixelRatio || 1;
+            var canvasSize = size * dpr;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            var cx = size / 2;
+            var cy = size / 2;
+            var radius = Math.max(1, (size - 4) / 2);
+            var diameter = radius * 2;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+
+            var imgW = img.width;
+            var imgH = img.height;
+            var imgAspect = imgW / imgH;
+            var circleAspect = 1;
+            var sx, sy, sw, sh;
+            if (imgAspect > circleAspect) {
+                sh = imgH;
+                sw = sh * circleAspect;
+                sx = (imgW - sw) / 2;
+                sy = 0;
+            } else {
+                sw = imgW;
+                sh = sw / circleAspect;
+                sx = 0;
+                sy = (imgH - sh) / 2;
+            }
+            ctx.drawImage(img, sx, sy, sw, sh, cx - radius, cy - radius, diameter, diameter);
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius + 1, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(74,124,89,0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            return canvas.toDataURL('image/png');
+        }
+
+        function createEmojiIcon(emoji, size) {
+            var canvas = document.createElement('canvas');
+            var dpr = window.devicePixelRatio || 1;
+            var canvasSize = size * dpr;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            var cx = size / 2;
+            var cy = size / 2;
+            var radius = Math.max(1, (size - 4) / 2);
+
+            var gradient = ctx.createLinearGradient(cx, cy - radius, cx, cy + radius);
+            gradient.addColorStop(0, '#6BAF7D');
+            gradient.addColorStop(1, '#3D7A4F');
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.font = Math.round(size * 0.5) + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(emoji, cx, cy + 1);
+
+            return canvas.toDataURL('image/png');
+        }
+
+        function generateAllMarkerIcons(callback) {
+            var allFrontendHerbs = [];
+            Object.values(herbData.cities).forEach(function(list) {
+                allFrontendHerbs = allFrontendHerbs.concat(list);
+            });
+            var total = allFrontendHerbs.length;
+            var loaded = 0;
+            var iconSize = 64;
+
+            function onIconDone(herbId, dataUrl) {
+                herbMarkerIcons[herbId] = dataUrl;
+                loaded++;
+                if (loaded >= total) {
+                    herbMarkerIconsReady = true;
+                    markerIconCallbacks.forEach(function(cb) { cb(); });
+                    markerIconCallbacks = [];
+                    if (callback) callback();
+                }
+            }
+
+            allFrontendHerbs.forEach(function(herb) {
+                var imgUrl = herbDbImages[herb.id] || herbImages[herb.id];
+                if (imgUrl) {
+                    var img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = function() {
+                        try {
+                            var dataUrl = createCircularIcon(img, iconSize);
+                            onIconDone(herb.id, dataUrl);
+                        } catch(e) {
+                            onIconDone(herb.id, createEmojiIcon(herb.name.charAt(0), iconSize));
+                        }
+                    };
+                    img.onerror = function() {
+                        onIconDone(herb.id, createEmojiIcon(herb.name.charAt(0), iconSize));
+                    };
+                    img.src = imgUrl;
+                } else {
+                    onIconDone(herb.id, createEmojiIcon(herb.name.charAt(0), iconSize));
+                }
+            });
+        }
+
+        function onMarkerIconsReady(callback) {
+            if (herbMarkerIconsReady) {
+                callback();
+            } else {
+                markerIconCallbacks.push(callback);
+            }
+        }
+
+        function preloadStaticImages(ids) {
+            ids.forEach(function(id) {
+                var url = herbDbImages[id] || herbImages[id];
+                if (url && !imageCache[id]) {
+                    var img = new Image();
+                    var timer = setTimeout(function() {
+                        imageCache[id] = 'timeout';
+                        img.src = '';
+                    }, 15000);
+                    img.onload = function() {
+                        clearTimeout(timer);
+                        imageCache[id] = 'loaded';
+                    };
+                    img.onerror = function() {
+                        clearTimeout(timer);
+                        if (!imageCache[id]) imageCache[id] = 'failed';
+                    };
+                    img.src = url;
+                }
+            });
+        }
+
+        var herbDbImages = {};
+        var herbNameToDbId = {};
+        var herbDbIdToName = {};
+
+        function buildHerbNameMapping(dbHerbs) {
+            herbNameToDbId = {};
+            herbDbIdToName = {};
+            dbHerbs.forEach(function(dbHerb) {
+                herbNameToDbId[dbHerb.name] = dbHerb.id;
+                herbDbIdToName[dbHerb.id] = dbHerb.name;
+            });
+        }
+
+        function getDbIdByFrontendId(frontendId) {
+            var allFrontendHerbs = [];
+            Object.values(herbData.cities).forEach(function(list) {
+                allFrontendHerbs = allFrontendHerbs.concat(list);
+            });
+            var herb = allFrontendHerbs.find(function(h) { return h.id === frontendId; });
+            if (!herb) return frontendId;
+            var city = '';
+            Object.entries(herbData.cities).forEach(function(entry) {
+                if (entry[1].some(function(h) { return h.id === frontendId; })) city = entry[0];
+            });
+            var cityPrefix = city.replace(/市$/, '');
+            var sameNameCount = allFrontendHerbs.filter(function(h) { return h.name === herb.name; }).length;
+            if (sameNameCount <= 1) {
+                var dbId = herbNameToDbId[herb.name];
+                if (dbId) return dbId;
+            }
+            for (var dbName in herbNameToDbId) {
+                if (dbName.indexOf(herb.name) > -1 && dbName.indexOf(cityPrefix) > -1) {
+                    return herbNameToDbId[dbName];
+                }
+            }
+            if (herb.alias) {
+                var aliases = herb.alias.split(/[、,，]/);
+                for (var i = 0; i < aliases.length; i++) {
+                    var aliasName = aliases[i].trim();
+                    if (!aliasName) continue;
+                    var dbId = herbNameToDbId[aliasName];
+                    if (dbId) return dbId;
+                    for (var dbName in herbNameToDbId) {
+                        if (dbName.indexOf(aliasName) > -1 && dbName.indexOf(cityPrefix) > -1) {
+                            return herbNameToDbId[dbName];
+                        }
+                    }
+                }
+            }
+            var dbId = herbNameToDbId[herb.name];
+            if (dbId) return dbId;
+            for (var dbName in herbNameToDbId) {
+                if (dbName !== herb.name && (dbName.indexOf(herb.name) > -1 || herb.name.indexOf(dbName) > -1)) {
+                    return herbNameToDbId[dbName];
+                }
+            }
+            return frontendId;
+        }
+
+        function getFrontendIdByDbId(dbId) {
+            var herbName = herbDbIdToName[dbId];
+            if (!herbName) return dbId;
+            var allFrontendHerbs = [];
+            Object.values(herbData.cities).forEach(function(list) {
+                allFrontendHerbs = allFrontendHerbs.concat(list);
+            });
+            var herb = allFrontendHerbs.find(function(h) { return h.name === herbName; });
+            if (herb) return herb.id;
+            var candidates = allFrontendHerbs.filter(function(h) {
+                return herbName.indexOf(h.name) > -1 || h.name.indexOf(herbName) > -1;
+            });
+            if (candidates.length === 1) return candidates[0].id;
+            if (candidates.length > 1) {
+                for (var i = 0; i < candidates.length; i++) {
+                    var city = '';
+                    Object.entries(herbData.cities).forEach(function(entry) {
+                        if (entry[1].some(function(h) { return h.id === candidates[i].id; })) city = entry[0];
+                    });
+                    var cityPrefix = city.replace(/市$/, '');
+                    if (herbName.indexOf(cityPrefix) > -1) {
+                        return candidates[i].id;
+                    }
+                }
+            }
+            herb = allFrontendHerbs.find(function(h) {
+                if (h.alias && h.alias.indexOf(herbName) > -1) return true;
+                return false;
+            });
+            return herb ? herb.id : dbId;
+        }
+
+        function preloadHerbImages() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/herbs', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success && resp.data) {
+                            buildHerbNameMapping(resp.data);
+                            var updatedIds = [];
+                            resp.data.forEach(function(herb) {
+                                if (herb.image_url) {
+                                    var frontendId = getFrontendIdByDbId(herb.id);
+                                    if (!herbDbImages[frontendId] || herbDbImages[frontendId] !== herb.image_url) {
+                                        herbDbImages[frontendId] = herb.image_url;
+                                        updatedIds.push(frontendId);
+                                    }
+                                }
+                            });
+                            updateVisibleImages();
+                            if (!herbMarkerIconsReady) {
+                                generateAllMarkerIcons();
+                            } else if (updatedIds.length > 0) {
+                                regenerateMarkerIcons(updatedIds);
+                            }
+                        }
+                    } catch(e) {}
+                }
+            };
+            xhr.send();
+        }
+
+        function regenerateMarkerIcons(herbIds) {
+            var iconSize = 64;
+            var pending = herbIds.length;
+            herbIds.forEach(function(herbId) {
+                var imgUrl = herbDbImages[herbId] || herbImages[herbId];
+                if (!imgUrl) {
+                    pending--;
+                    return;
+                }
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    try {
+                        herbMarkerIcons[herbId] = createCircularIcon(img, iconSize);
+                    } catch(e) {}
+                    pending--;
+                    if (pending <= 0 && currentChart) {
+                        refreshMapMarkers();
+                    }
+                };
+                img.onerror = function() { pending--; };
+                img.src = imgUrl;
+            });
+        }
+
+        function refreshMapMarkers() {
+            if (!currentChart) return;
+            var option = currentChart.getOption();
+            if (!option || !option.series) return;
+            var scatterSeries = option.series.find(function(s) { return s.id === 'herbScatter'; });
+            if (!scatterSeries || !scatterSeries.data) return;
+            scatterSeries.data.forEach(function(item) {
+                if (herbMarkerIcons[item.herbId]) {
+                    item.symbol = 'image://' + herbMarkerIcons[item.herbId];
+                }
+            });
+            currentChart.setOption({ series: [{ id: 'herbScatter', data: scatterSeries.data }] });
+        }
+
+        function updateVisibleImages() {
+            Object.keys(herbDbImages).forEach(function(id) {
+                var dbUrl = herbDbImages[id];
+                var staticUrl = herbImages[id];
+                var allImgs = document.querySelectorAll('img[data-herb-id="' + id + '"]');
+                allImgs.forEach(function(img) {
+                    var currentSrc = img.getAttribute('src');
+                    if (currentSrc !== dbUrl) {
+                        if (staticUrl && currentSrc === staticUrl && imageCache[id] !== 'loaded') {
+                            img.src = dbUrl;
+                        } else if (!staticUrl && currentSrc !== dbUrl) {
+                            img.src = dbUrl;
+                        }
+                    }
+                });
+            });
+        }
+
+        function loadHerbDbImage(herbId) {
+            var dbId = getDbIdByFrontendId(herbId);
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/herbs/' + dbId, true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success && resp.data) {
+                            var imageUrl = resp.data.image_url;
+                            if (!imageUrl) {
+                                loadHerbFirstImage(herbId);
+                                return;
+                            }
+                            herbDbImages[herbId] = imageUrl;
+                            var allImgs = document.querySelectorAll('img[data-herb-id="' + herbId + '"]');
+                            allImgs.forEach(function(img) {
+                                if (img.getAttribute('src') !== imageUrl) {
+                                    img.src = imageUrl;
+                                    img.style.opacity = '0';
+                                }
+                            });
+                        }
+                    } catch(e) {}
+                }
+            };
+            xhr.onerror = function() {};
+            xhr.send();
+        }
+
+        function loadHerbFirstImage(herbId) {
+            var dbId = getDbIdByFrontendId(herbId);
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/herbs/' + dbId + '/images', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success && resp.data && resp.data.length > 0) {
+                            var imageUrl = resp.data[0].image_url;
+                            herbDbImages[herbId] = imageUrl;
+                            var allImgs = document.querySelectorAll('img[data-herb-id="' + herbId + '"]');
+                            allImgs.forEach(function(img) {
+                                if (img.getAttribute('src') !== imageUrl) {
+                                    img.src = imageUrl;
+                                    img.style.opacity = '0';
+                                }
+                            });
+                        }
+                    } catch(e) {}
+                }
+            };
+            xhr.onerror = function() {};
+            xhr.send();
+        }
+
+        function loadHerbGallery(herbId) {
+            var dbId = getDbIdByFrontendId(herbId);
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/herbs/' + dbId + '/images', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success && resp.data && resp.data.length > 0) {
+                            renderHerbGallery(resp.data);
+                        }
+                    } catch(e) {}
+                }
+            };
+            xhr.onerror = function() {};
+            xhr.send();
+        }
+
+        function renderHerbGallery(images) {
+            var container = document.getElementById('herb-gallery');
+            if (!container || images.length <= 1) return;
+
+            var html = '<div class="herb-gallery-scroll">';
+            images.forEach(function(img, idx) {
+                html += '<img src="' + img.image_url + '" class="herb-gallery-thumb' + (idx === 0 ? ' active' : '') + '" onclick="switchGalleryImage(this, \'' + img.image_url + '\')" loading="lazy" onerror="handleGalleryImgError(this)">';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        function handleGalleryImgError(img) {
+            img.style.display = 'none';
+            img.style.width = '0';
+            img.style.padding = '0';
+            img.style.margin = '0';
+            img.onclick = null;
+        }
+
+        function switchGalleryImage(thumb, imgUrl) {
+            var mainImg = document.querySelector('.herb-detail-image img');
+            if (mainImg) {
+                mainImg.style.opacity = '0';
+                mainImg.src = imgUrl;
+            }
+            document.querySelectorAll('.herb-gallery-thumb').forEach(function(t) { t.classList.remove('active'); });
+            thumb.classList.add('active');
+        }
+
+        function getHerbImgHtml(herbId, herbIcon, size, alt) {
+            var url = herbDbImages[herbId] || herbImages[herbId];
+            if (!url) return herbIcon || '🌿';
+            var fallback = herbIcon || '🌿';
+            return '<img src="' + url + '" alt="' + (alt || '') + '" loading="lazy" class="herb-img-' + size + '" data-herb-id="' + herbId + '" onerror="handleImgError(this,\'' + fallback.replace(/'/g, "\\'") + '\',' + herbId + ')" onload="handleImgLoad(this)">';
+        }
+
+        function handleImgError(img, fallback, herbId) {
+            var count = imageRetryCount[herbId] || 0;
+            var dbUrl = herbDbImages[herbId];
+            var staticUrl = herbImages[herbId];
+            var currentSrc = img.getAttribute('src');
+
+            if (dbUrl && currentSrc === dbUrl && count < MAX_RETRIES) {
+                imageRetryCount[herbId] = count + 1;
+                setTimeout(function() {
+                    img.src = addCacheBuster(dbUrl);
+                }, 1000 * (count + 1));
+                return;
+            }
+
+            if (dbUrl && currentSrc !== dbUrl && currentSrc !== staticUrl) {
+                img.src = dbUrl;
+                return;
+            }
+
+            if (dbUrl && currentSrc === dbUrl && staticUrl) {
+                img.src = staticUrl;
+                return;
+            }
+
+            if (staticUrl && count < MAX_RETRIES) {
+                imageRetryCount[herbId] = count + 1;
+                setTimeout(function() {
+                    img.src = addCacheBuster(staticUrl);
+                }, 1000 * (count + 1));
+                return;
+            }
+            imageCache[herbId] = 'failed';
+            img.style.display = 'none';
+            var parent = img.parentElement;
+            if (parent) {
+                var fallbackEl = parent.querySelector('.herb-emoji-fallback');
+                if (fallbackEl) fallbackEl.style.display = 'flex';
+                var skeleton = parent.querySelector('.img-skeleton');
+                if (skeleton) skeleton.style.display = 'none';
+            }
+        }
+
+        function addCacheBuster(url) {
+            var separator = url.indexOf('?') > -1 ? '&' : '?';
+            return url + separator + '_t=' + Date.now();
+        }
+
+        function handleImgLoad(img) {
+            img.style.opacity = '1';
+            var parent = img.parentElement;
+            if (parent) {
+                var fallback = parent.querySelector('.herb-emoji-fallback');
+                if (fallback) fallback.style.display = 'none';
+                var skeleton = parent.querySelector('.img-skeleton');
+                if (skeleton) skeleton.style.display = 'none';
+            }
+        }
+
+        const herbData = {
+            cities: {
+                '河源市': [
+                    { id: '1', name: '五指毛桃', alias: '鸡矢藤、土黄芪', icon: '🌿', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿，舒筋活络', indication: '脾虚浮肿，食少无力，肺痨咳嗽，盗汗', dosage: '内服：煎汤，30～60g。鲜品可用至120g。', contraindication: '表虚自汗者慎用。阴虚火旺者不宜。', modern: '现代研究表明含补骨脂素、佛手柑内酯等成分，具有抗菌、抗氧化、调节免疫等作用。临床用于治疗慢性支气管炎、肺结核等。', usage: '煎汤内服，或炖肉食用。鲜品捣敷外用。', recipes: [{name: '五指毛桃煲鸡汤', published: true}, {name: '五指毛桃猪骨汤', published: false}, {name: '五指毛桃祛湿茶', published: false}], video: {name: '五指毛桃种植与煲汤教学', published: true} },
+                    { id: '2', name: '灵芝', alias: '灵芝草、仙草', icon: '🍄', nature: '甘、平', meridian: '心、肺、肝、肾', efficacy: '补气安神，止咳平喘', indication: '眩晕不眠，心悸气短，虚劳咳喘', dosage: '内服：煎汤，6～12g；研末吞服，1.5～3g。', contraindication: '外感初起者不宜。实证慎用。', modern: '含多糖、三萜类化合物，具有增强免疫、抗肿瘤、保肝、降血糖、调节心血管等作用。广泛用于辅助治疗肿瘤、慢性肝炎等。', usage: '煎汤内服，浸酒，或研末冲服。', recipes: [{name: '灵芝乌鸡汤', published: true}, {name: '灵芝茶', published: false}], video: {name: '河源野生灵芝探访', published: false} },
+                    { id: '3', name: '金线莲', alias: '金线兰、鸟人参', icon: '🌱', nature: '甘、凉', meridian: '肺、肝、肾、膀胱', efficacy: '清热凉血，祛风利湿，强心利尿', indication: '肾炎，膀胱炎，糖尿病，支气管炎，风湿性关节炎', dosage: '内服：煎汤，9～15g。鲜品可用至30g。', contraindication: '脾胃虚寒者慎用。孕妇慎服。', modern: '含氨基酸、微量元素及多种活性成分，具有保肝、降血糖、抗氧化、调节免疫等作用。民间有"药王"之称。', usage: '煎汤内服，或炖瘦肉食用。鲜品捣敷外用。', recipes: [{name: '金线莲炖瘦肉', published: false}, {name: '金线莲茶', published: false}], video: {name: '河源金线莲种植探秘', published: false} }
+                ],
+                '肇庆市': [
+                    { id: '4', name: '巴戟天', alias: '鸡肠风、鸡眼藤', icon: '🌿', nature: '甘、辛、微温', meridian: '肾、肝', efficacy: '补肾阳，强筋骨，祛风湿', indication: '阳痿遗精，宫冷不孕，月经不调，少腹冷痛，风湿痹痛', dosage: '内服：煎汤，3～10g。', contraindication: '阴虚火旺者忌服。湿热下注者不宜。', modern: '含蒽醌类、环烯醚萜苷等成分，具有促肾上腺皮质激素样作用、增强免疫、抗抑郁等作用。临床用于治疗阳痿、不孕症等。', usage: '煎汤内服，浸酒或入丸散。盐巴戟天补肾力更强。', recipes: [{name: '巴戟杜仲汤', published: false}, {name: '巴戟天炖鸡', published: false}], video: {name: '德庆巴戟天炮制实录', published: false} },
+                    { id: '5', name: '何首乌', alias: '首乌、地精', icon: '🌱', nature: '苦、甘、涩、温', meridian: '肝、心、肾', efficacy: '补益精血，乌须发，强筋骨，补肝肾', indication: '血虚萎黄，眩晕耳鸣，须发早白，腰膝酸软', dosage: '内服：煎汤，制首乌6～12g；生首乌3～6g。', contraindication: '大便溏泄及湿痰较重者不宜。生首乌有肝毒性，须炮制后用。不宜与葱、蒜、萝卜同食。', modern: '含蒽醌类、二苯乙烯苷等成分，具有降血脂、抗衰老、增强免疫、保肝等作用。生品有润肠通便、解毒截疟之效。', usage: '制首乌煎汤或入丸散，补益精血。生首乌润肠解毒。', recipes: [{name: '首乌乌鸡汤', published: false}, {name: '首乌粥', published: false}], video: {name: '何首乌九蒸九晒工艺', published: false} },
+                    { id: '6', name: '石斛', alias: '黄草、吊兰', icon: '🌺', nature: '甘、微寒', meridian: '胃、肾', efficacy: '益胃生津，滋阴清热', indication: '阴伤津亏，口干烦渴，食少干呕，病后虚热', dosage: '内服：煎汤，6～12g，鲜品15～30g。', contraindication: '温热病早期阴未伤者不宜。湿温尚未化燥者忌服。脾胃虚寒者慎用。', modern: '含石斛碱、石斛多糖等成分，具有增强免疫、抗肿瘤、降血糖、抗氧化等作用。铁皮石斛为珍稀品种，保健价值极高。', usage: '煎汤内服，或熬膏入丸散。鲜品可嚼服。', recipes: [{name: '石斛麦冬茶', published: false}, {name: '石斛瘦肉汤', published: false}], video: {name: '肇庆石斛栽培与采收', published: false} }
+                ],
+                '江门市': [
+                    { id: '7', name: '广陈皮', alias: '陈皮、橘皮', icon: '🍊', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '胸脘胀满，食少吐泻，咳嗽痰多', dosage: '内服：煎汤，3～10g。', contraindication: '阴虚燥咳、吐血证及舌赤少津、内有实热者慎服。气虚及阴虚咳嗽者不宜。', modern: '含挥发油（右旋柠檬烯）、橙皮苷等成分，具有祛痰、平喘、抗炎、抗溃疡、促消化等作用。新会陈皮为道地药材，陈久者良。', usage: '煎汤内服，或入丸散。可泡茶、炖汤、烹饪调味。', recipes: [{name: '陈皮普洱茶', published: false}, {name: '陈皮鸭', published: false}, {name: '陈皮红豆沙', published: false}], video: {name: '新会陈皮百年传承', published: false} },
+                    { id: '8', name: '新会柑', alias: '柑果', icon: '🍊', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '生津止渴，醒酒利尿', indication: '热病烦渴，小便不利，饮酒过度', dosage: '内服：鲜果适量食用。果皮制陈皮入药3～10g。', contraindication: '脾胃虚寒者不宜多食。风寒咳嗽者忌服。', modern: '果肉富含维生素C、柠檬酸等，果皮为制作新会陈皮的原料。陈皮以新会产为道地，储存越久药用价值越高。', usage: '鲜果生食，果皮晒干陈化制陈皮入药。', recipes: [{name: '糖渍柑饼', published: false}, {name: '柑普茶', published: false}], video: {name: '新会柑采摘与陈皮制作', published: false} }
+                ],
+                '茂名市': [
+                    { id: '9', name: '化橘红', alias: '化州橘红、柚皮橘红', icon: '🍊', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '散寒，燥湿，利气，消痰', indication: '风寒咳嗽，喉痒痰多，食积伤酒，呕恶痞闷', dosage: '内服：煎汤，3～6g；或入丸散。', contraindication: '阴虚燥咳及久咳气虚者不宜。孕妇慎服。', modern: '含柚皮苷、挥发油等成分，具有镇咳、祛痰、平喘、抗炎等作用。化州橘红为化州道地药材，有"南方人参"之称。', usage: '煎汤内服，或泡水代茶饮。切片开水冲泡效果佳。', recipes: [{name: '化橘红雪梨汤', published: false}, {name: '化橘红茶', published: false}], video: {name: '化州橘红产地探访', published: false} },
+                    { id: '10', name: '沉香', alias: '沉水香、女儿香', icon: '🌳', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕，纳气平喘', indication: '胸腹胀闷疼痛，胃寒呕吐呃逆，肾虚气逆喘息', dosage: '内服：煎汤，1～5g，后下；研末冲服，0.5～1g。', contraindication: '阴虚火旺者慎用。气虚下陷者不宜。孕妇慎服。', modern: '含挥发油（沉香螺醇、白木香酸等），具有镇静、镇痛、抗炎、平喘等作用。为名贵香料及药材，资源稀缺。', usage: '煎汤宜后下，或研末冲服。亦可磨汁外涂。', recipes: [{name: '沉香茶', published: false}, {name: '沉香泡酒', published: false}], video: {name: '茂名沉香结香工艺', published: false} }
+                ],
+                '阳江市': [
+                    { id: '11', name: '春砂仁', alias: '阳春砂、缩砂蜜', icon: '🌸', nature: '辛、温', meridian: '脾、胃、肾', efficacy: '化湿开胃，温脾止泻，理气安胎', indication: '湿浊中阻，脘痞不饥，脾胃虚寒，呕吐泄泻，妊娠恶阻', dosage: '内服：煎汤，3～6g，后下；或入丸散。', contraindication: '阴虚有热者忌服。肺热咳嗽者不宜。', modern: '含挥发油（乙酸龙脑酯、樟脑等），具有促胃肠蠕动、抗溃疡、镇痛等作用。阳春砂为砂仁中品质最优者。', usage: '煎汤宜后下，或入丸散。可炖汤调味。', recipes: [{name: '砂仁鲫鱼汤', published: false}, {name: '砂仁蒸排骨', published: false}], video: {name: '阳春砂采收加工', published: false} }
+                ],
+                '梅州市': [
+                    { id: '12', name: '梅片', alias: '梅花冰片、龙脑香', icon: '❄️', nature: '辛、苦、凉', meridian: '心、脾、肺', efficacy: '开窍醒神，清热止痛', indication: '热病神昏，痉厥，中风痰厥，气郁暴厥，中恶昏迷，目赤口疮', dosage: '内服：入丸散，0.15～0.3g，不入煎剂。外用适量。', contraindication: '孕妇慎服。气血虚者忌用。入丸散不宜入煎剂。', modern: '含右旋龙脑等成分，具有抗炎、镇痛、抗菌、促进透皮吸收等作用。梅片为天然冰片，品质优于合成冰片。', usage: '入丸散内服，不入煎剂。外用研粉撒或调敷。', recipes: null, video: {name: '梅州梅片传统制作', published: false} },
+                    { id: '13', name: '五指毛桃', alias: '鸡矢藤', icon: '🌿', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿', indication: '脾虚浮肿，食少无力，肺痨咳嗽', dosage: '内服：煎汤，30～60g。', contraindication: '表虚自汗者慎用。阴虚火旺者不宜。', modern: '含补骨脂素、佛手柑内酯等香豆素类成分，具有抗菌、抗氧化、调节免疫等作用。', usage: '煎汤内服，或炖肉食用。', recipes: [{name: '五指毛桃根汤', published: false}], video: {name: '梅州五指毛桃采挖', published: false} }
+                ],
+                '广州市': [
+                    { id: '14', name: '木棉花', alias: '英雄花、攀枝花', icon: '🌺', nature: '甘、淡、凉', meridian: '大肠', efficacy: '清热，利湿，解毒，止血', indication: '泄泻，痢疾，血崩，疮毒，金创出血', dosage: '内服：煎汤，6～9g。外用适量。', contraindication: '脾胃虚寒者慎服。孕妇慎用。', modern: '含鞣质、多糖等成分，具有抗炎、抗菌、止血、降血糖等作用。岭南地区常用凉茶原料。', usage: '煎汤内服，或泡水代茶。外用研末撒或调敷。', recipes: [{name: '木棉花祛湿粥', published: false}, {name: '五花茶', published: false}], video: {name: '广州木棉花赏花与药用', published: false} },
+                    { id: '15', name: '鸡蛋花', alias: '缅栀子、蛋黄花', icon: '💮', nature: '甘、凉', meridian: '肺、大肠', efficacy: '清热，利湿，解暑', indication: '感冒发热，肺热咳嗽，湿热黄疸，泄泻痢疾', dosage: '内服：煎汤，9～15g。', contraindication: '脾胃虚寒者慎服。寒湿泻痢者不宜。', modern: '含鸡蛋花苷、挥发油等成分，具有抗炎、抗菌、解痉等作用。广东凉茶常用原料之一。', usage: '煎汤内服，或泡茶饮用。', recipes: [{name: '鸡蛋花茶', published: false}, {name: '鸡蛋花糖水', published: false}], video: {name: '广州鸡蛋花与凉茶文化', published: false} }
+                ],
+                '清远市': [
+                    { id: '16', name: '玉竹', alias: '荧、委萎', icon: '🌿', nature: '甘、平', meridian: '肺、胃', efficacy: '养阴润燥，生津止渴', indication: '肺胃阴伤，燥热咳嗽，咽干口渴，内热消渴', dosage: '内服：煎汤，6～12g。', contraindication: '痰湿气滞者忌服。脾虚便溏者慎用。', modern: '含玉竹多糖、黄酮类等成分，具有降血糖、增强免疫、抗衰老、抗疲劳等作用。', usage: '煎汤内服，熬膏或入丸散。可炖汤食用。', recipes: [{name: '玉竹麦冬汤', published: false}, {name: '玉竹炖鸡', published: false}], video: {name: '清远玉竹种植与加工', published: false} },
+                    { id: '17', name: '百合', alias: '白百合、蒜脑薯', icon: '🌸', nature: '甘、寒', meridian: '心、肺', efficacy: '养阴润肺，清心安神', indication: '阴虚久咳，痰中带血，虚烦惊悸，失眠多梦', dosage: '内服：煎汤，6～12g。', contraindication: '风寒咳嗽及中寒便溏者忌服。', modern: '含百合多糖、生物碱等成分，具有镇咳、祛痰、镇静、抗抑郁等作用。', usage: '煎汤内服，或蒸食、煮粥。', recipes: [{name: '莲子百合糖水', published: false}, {name: '百合粥', published: false}], video: {name: '清远百合采收与食疗', published: false} }
+                ],
+                '韶关市': [
+                    { id: '18', name: '溪黄草', alias: '熊胆草、山熊胆', icon: '🌿', nature: '苦、寒', meridian: '肝、胆、大肠', efficacy: '清热利湿，凉血散瘀', indication: '急性黄疸型肝炎，急性胆囊炎，肠炎痢疾', dosage: '内服：煎汤，15～30g。鲜品可用至60g。', contraindication: '脾胃虚寒者慎服。孕妇忌服。', modern: '含溪黄草素、二萜类等成分，具有保肝利胆、抗炎、抗肿瘤等作用。为治疗肝炎的常用民间草药。', usage: '煎汤内服，或泡水代茶饮。鲜品捣汁外用。', recipes: [{name: '溪黄草茶', published: false}, {name: '溪黄草祛湿汤', published: false}], video: {name: '韶关溪黄草采摘与制茶', published: false} },
+                    { id: '19', name: '绞股蓝', alias: '七叶胆、南方人参', icon: '🍃', nature: '苦、微甘、凉', meridian: '肺、脾、肾', efficacy: '清热，补虚，解毒', indication: '体虚乏力，虚劳失精，高脂血症，慢性气管炎', dosage: '内服：煎汤，15～30g；研末吞服，3～6g。', contraindication: '脾胃虚寒者慎服。少数人服用后可能出现恶心、呕吐等反应。', modern: '含绞股蓝皂苷（与人参皂苷结构相似）、黄酮等成分，具有降血脂、降血糖、抗疲劳、增强免疫、抗肿瘤等作用。', usage: '煎汤内服，泡茶饮用，或研末冲服。', recipes: [{name: '绞股蓝茶', published: false}], video: {name: '韶关绞股蓝种植与养生', published: false} }
+                ],
+                '东莞市': [
+                    { id: '20', name: '沉香', alias: '莞香、女儿香', icon: '🌳', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕', indication: '胸腹胀闷疼痛，胃寒呕吐，肾虚喘息', dosage: '内服：煎汤，1～5g，后下；研末冲服，0.5～1g。', contraindication: '阴虚火旺者慎用。气虚下陷者不宜。孕妇慎服。', modern: '含挥发油（沉香螺醇等），具有镇静、镇痛、平喘等作用。东莞莞香为道地沉香，历史悠久，品质上乘。', usage: '煎汤宜后下，或研末冲服。亦可熏燃闻香。', recipes: [{name: '沉香茶', published: false}], video: {name: '东莞莞香传统结香术', published: false} }
+                ],
+                '佛山市': [
+                    { id: '21', name: '陈皮', alias: '广陈皮', icon: '🍊', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '脾胃气滞，脘腹胀满，食少吐泻，咳嗽痰多', dosage: '内服：煎汤，3～10g。', contraindication: '阴虚燥咳者不宜。内有实热者慎服。', modern: '含挥发油、橙皮苷等成分，具有祛痰、平喘、抗炎、促消化等作用。佛山为广陈皮重要产区之一。', usage: '煎汤内服，或泡茶、炖汤、烹饪调味。', recipes: [{name: '陈皮粥', published: false}, {name: '陈皮茶', published: false}], video: {name: '佛山陈皮炮制与鉴赏', published: false} }
+                ],
+                '惠州市': [
+                    { id: '22', name: '白花蛇舌草', alias: '蛇舌草', icon: '🌿', nature: '甘、淡、凉', meridian: '胃、大肠、小肠', efficacy: '清热解毒，利尿通淋', indication: '痈肿疮毒，咽喉肿痛，毒蛇咬伤，热淋涩痛', dosage: '内服：煎汤，15～30g。鲜品可用至60g。', contraindication: '脾胃虚寒者慎服。孕妇慎用。', modern: '含齐墩果酸、熊果酸等成分，具有抗肿瘤、增强免疫、抗炎、抗菌等作用。临床广泛用于肿瘤辅助治疗。', usage: '煎汤内服，鲜品捣汁外敷。', recipes: [{name: '蛇舌草凉茶', published: false}, {name: '蛇舌草排骨汤', published: false}], video: {name: '惠州白花蛇舌草辨识', published: false} },
+                    { id: '23', name: '鱼腥草', alias: '蕺菜、臭菜', icon: '🌱', nature: '辛、微寒', meridian: '肺', efficacy: '清热解毒，消痈排脓', indication: '肺痈吐脓，痰热喘咳，热痢热淋，痈肿疮毒', dosage: '内服：煎汤，15～30g，不宜久煎。鲜品可用至60g。', contraindication: '虚寒证及阴性疮疡忌服。不宜久煎。', modern: '含鱼腥草素（癸酰乙醛）、槲皮苷等成分，具有广谱抗菌、抗病毒、抗炎、增强免疫等作用。', usage: '煎汤内服，不宜久煎。鲜品可凉拌食用或捣汁外用。', recipes: [{name: '鱼腥草猪肺汤', published: false}, {name: '凉拌鱼腥草', published: false}], video: {name: '惠州鱼腥草采摘与食疗', published: false} }
+                ],
+                '揭阳市': [
+                    { id: '24', name: '金钱白花蛇', alias: '白花蛇', icon: '🐍', nature: '甘、咸、温', meridian: '肝、脾', efficacy: '祛风，通络，止痉', indication: '风湿顽痹，麻木拘挛，中风半身不遂，抽搐痉挛', dosage: '内服：研末吞服，1～1.5g；或浸酒。', contraindication: '阴虚内热者忌服。肝肾功能不全者慎用。孕妇禁服。', modern: '含蛇毒蛋白、多种氨基酸等，具有镇痛、抗炎、抗凝等作用。为贵重药材，临床用于风湿性疾病治疗。', usage: '研末吞服，或浸酒饮。外用研末调敷。', recipes: [{name: '白花蛇酒', published: false}], video: {name: '揭阳金钱白花蛇养殖', published: false} }
+                ],
+                '汕头市': [
+                    { id: '25', name: '橄榄', alias: '青果、忠果', icon: '🫒', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '清热，利咽，生津，解毒', indication: '咽喉肿痛，咳嗽烦渴，鱼蟹中毒', dosage: '内服：煎汤，6～12g；鲜品可用至30g。', contraindication: '脾胃虚寒及大便秘结者慎服。', modern: '含多酚类、三萜类等成分，具有抗氧化、抗菌、抗炎、保肝等作用。潮汕地区传统药食两用果品。', usage: '煎汤内服，鲜果嚼食，或盐渍食用。', recipes: [{name: '橄榄猪肺汤', published: false}, {name: '盐渍橄榄', published: false}], video: {name: '汕头橄榄采摘与加工', published: false} },
+                    { id: '26', name: '余甘子', alias: '庵摩勒、油甘子', icon: '🍋', nature: '甘、酸、涩、凉', meridian: '肺、胃', efficacy: '清热凉血，消食健胃，生津止咳', indication: '血热血瘀，消化不良，腹胀，咳嗽，喉痛口干', dosage: '内服：煎汤，15～30g；鲜果适量食用。', contraindication: '脾胃虚寒者慎服。', modern: '含维生素C（含量极高）、余甘子酸、鞣质等，具有抗氧化、降血脂、抗炎、抗肿瘤等作用。', usage: '煎汤内服，鲜果生食，或腌制食用。', recipes: [{name: '油甘茶', published: false}, {name: '腌制油甘', published: false}], video: {name: '汕头余甘子产地探访', published: false} }
+                ],
+                '潮州市': [
+                    { id: '27', name: '橘红', alias: '潮州橘红', icon: '🍊', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '理气宽中，燥湿化痰', indication: '咳嗽痰多，食积伤酒，呕恶痞闷', dosage: '内服：煎汤，3～6g；或入丸散。', contraindication: '阴虚燥咳者忌服。气虚者不宜久服。', modern: '含挥发油、柚皮苷等成分，具有祛痰、镇咳、抗炎等作用。潮州橘红为地方特色药材。', usage: '煎汤内服，或泡水代茶饮。', recipes: [{name: '橘红茶', published: false}, {name: '橘红糖', published: false}], video: {name: '潮州橘红制作工艺', published: false} },
+                    { id: '28', name: '佛手', alias: '佛手柑、五指橘', icon: '✋', nature: '辛、苦、酸、温', meridian: '肝、脾、肺', efficacy: '疏肝理气，和胃止痛', indication: '肝胃气滞，胸胁胀痛，食少呕吐', dosage: '内服：煎汤，3～10g。', contraindication: '阴虚有火、无气滞者慎服。', modern: '含挥发油、佛手柑内酯、橙皮苷等成分，具有解痉、抗炎、抗抑郁、保肝等作用。潮州佛手果为地方特色。', usage: '煎汤内服，或泡茶饮。可制作蜜饯食用。', recipes: [{name: '佛手茶', published: false}, {name: '佛手蜜饯', published: false}], video: {name: '潮州佛手果种植与加工', published: false} }
+                ],
+                '湛江市': [
+                    { id: '29', name: '菠萝蜜', alias: '木菠萝', icon: '🍍', nature: '甘、微酸、平', meridian: '胃', efficacy: '生津除烦，解酒醒脾', indication: '酒精中毒，酒后烦渴，消化不良', dosage: '内服：鲜果适量食用。果仁煎汤60～120g。', contraindication: '糖尿病患者慎食。湿热体质者不宜多食。', modern: '含菠萝蛋白酶、多糖等成分，具有助消化、抗炎、抗氧化等作用。果仁可煮食，味似栗子。', usage: '鲜果生食，果仁煮食或炒食。', recipes: [{name: '菠萝蜜果干', published: false}, {name: '菠萝蜜炖鸡汤', published: false}], video: {name: '湛江菠萝蜜产地探访', published: false} },
+                    { id: '30', name: '高良姜', alias: '风姜、小良姜', icon: '🌿', nature: '辛、热', meridian: '脾、胃', efficacy: '温胃散寒，消食止痛', indication: '脘腹冷痛，胃寒呕吐，嗳气吞酸', dosage: '内服：煎汤，3～6g。', contraindication: '阴虚有热者忌服。胃火作呕者不宜。', modern: '含高良姜素、挥发油等成分，具有抗溃疡、抗炎、镇痛、抗菌等作用。湛江徐闻为高良姜道地产区。', usage: '煎汤内服，或入丸散。可作调味料。', recipes: [{name: '良姜粥', published: false}, {name: '高良姜酒', published: false}], video: {name: '湛江高良姜种植与炮制', published: false} }
+                ],
+                '汕尾市': [
+                    { id: '31', name: '海马', alias: '水马、马头鱼', icon: '🐴', nature: '甘、温', meridian: '肝、肾', efficacy: '温肾壮阳，散结消肿', indication: '阳痿，遗尿，肾虚作喘，癥瘕积聚，跌打损伤', dosage: '内服：研末吞服，1～1.5g；煎汤3～9g。', contraindication: '阴虚火旺者忌服。孕妇及外感发热者禁服。', modern: '含氨基酸、蛋白质、多种微量元素等，具有性激素样作用、抗疲劳、抗衰老等作用。为名贵海洋药材。', usage: '研末吞服，或煎汤内服。浸酒饮用。', recipes: [{name: '海马炖鸡', published: false}, {name: '海马酒', published: false}], video: {name: '汕尾海马养殖与鉴别', published: false} },
+                    { id: '32', name: '鲍鱼', alias: '鳆鱼、镜面鱼', icon: '🐚', nature: '甘、咸、平', meridian: '肝、肾', efficacy: '滋阴清热，益精明目', indication: '阴虚内热，骨蒸劳热，青盲内障，月经不调', dosage: '内服：煮食适量。石决明（鲍鱼壳）煎汤6～20g。', contraindication: '脾胃虚弱者不宜多食。痛风患者慎食。', modern: '含鲍鱼多糖、牛磺酸等成分，具有增强免疫、抗肿瘤、抗氧化等作用。鲍鱼壳（石决明）为平肝潜阳要药。', usage: '鲜品煮食，干品泡发后烹饪。壳入药煎汤。', recipes: [{name: '鲍鱼汤', published: false}, {name: '鲍鱼炖鸡', published: false}], video: {name: '汕尾鲍鱼养殖与食疗', published: false} }
+                ],
+                '中山市': [
+                    { id: '33', name: '杏仁', alias: '苦杏仁、北杏仁', icon: '🌰', nature: '苦、微温', meridian: '肺、大肠', efficacy: '降气止咳平喘，润肠通便', indication: '咳嗽气喘，胸满痰多，肠燥便秘', dosage: '内服：煎汤，3～10g，宜后下；或入丸散。', contraindication: '阴虚咳嗽及大便溏泄者忌服。本品有小毒，内服不宜过量。婴儿慎用。', modern: '含苦杏仁苷，在体内水解产生微量氢氰酸，具有镇咳、平喘、镇痛等作用。用量过大可致中毒。', usage: '煎汤宜后下，或入丸散。须去皮炒制后用。', recipes: [{name: '杏仁露', published: false}, {name: '杏仁茶', published: false}], video: {name: '中山杏仁炮制与食疗', published: false} },
+                    { id: '34', name: '土茯苓', alias: '冷饭团、硬饭头', icon: '🌿', nature: '甘、淡、平', meridian: '肝、胃', efficacy: '解毒，除湿，通利关节', indication: '湿热淋浊，带下，痈肿，瘰疬，梅毒及汞中毒所致肢体拘挛', dosage: '内服：煎汤，15～60g。', contraindication: '肝肾阴虚者慎服。服时忌饮茶。', modern: '含落新妇苷、黄酮类等成分，具有抗炎、抗菌、抗痛风、调节免疫等作用。为治疗梅毒及痛风的常用药物。', usage: '煎汤内服，或入丸散。外用研末调敷。', recipes: [{name: '土茯苓汤', published: false}, {name: '土茯苓糕', published: false}], video: {name: '中山土茯苓采收与药用', published: false} }
+                ]
+            }
+        };
+
+        const allHerbsFlat = [];
+        Object.entries(herbData.cities).forEach(([city, herbs]) => {
+            herbs.forEach(h => allHerbsFlat.push({ ...h, city }));
+        });
+
+        const provinceHerbData = [
+            { name: '广东', value: 34 }, { name: '云南', value: 28 }, { name: '浙江', value: 22 },
+            { name: '河南', value: 20 }, { name: '四川', value: 25 }, { name: '广西', value: 18 },
+            { name: '贵州', value: 16 }, { name: '湖北', value: 15 }, { name: '湖南', value: 17 },
+            { name: '安徽', value: 14 }, { name: '福建', value: 13 }, { name: '甘肃', value: 12 },
+            { name: '河北', value: 11 }, { name: '山西', value: 10 }, { name: '陕西', value: 13 },
+            { name: '山东', value: 12 }, { name: '江西', value: 11 }, { name: '吉林', value: 9 },
+            { name: '辽宁', value: 10 }, { name: '黑龙江', value: 8 }, { name: '内蒙古', value: 7 },
+            { name: '新疆', value: 6 }, { name: '西藏', value: 5 }, { name: '青海', value: 4 },
+            { name: '宁夏', value: 3 }, { name: '海南', value: 6 }, { name: '重庆', value: 8 },
+            { name: '北京', value: 5 }, { name: '天津', value: 3 }, { name: '上海', value: 4 },
+            { name: '江苏', value: 12 }, { name: '台湾', value: 5 }, { name: '香港', value: 3 }, { name: '澳门', value: 2 }
+        ];
+
+        let currentState = {
+            level: 'national',
+            province: '',
+            city: '',
+            herbId: '',
+            favoriteHerbs: [],
+            searchQuery: '',
+            searchResults: null,
+            searchLoading: false,
+            searchError: null
+        };
+
+        let searchTimer = null;
+        let currentChart = null;
+        let chinaGeoLoaded = false;
+        let guangdongGeoLoaded = false;
+        let toastTimer = null;
+
+        function showComingSoonToast(provinceName, x, y) {
+            let toast = document.getElementById('coming-soon-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'coming-soon-toast';
+                toast.className = 'coming-soon-toast';
+                toast.setAttribute('role', 'alert');
+                toast.setAttribute('aria-live', 'polite');
+                document.body.appendChild(toast);
+            }
+            toast.innerHTML = '<span class="toast-icon">🌿</span><span class="toast-province">' + provinceName + '</span> 敬请期待';
+            var posX = Math.min(x - 80, window.innerWidth - 220);
+            posX = Math.max(posX, 10);
+            var posY = y - 60;
+            posY = Math.max(posY, 10);
+            toast.style.left = posX + 'px';
+            toast.style.top = posY + 'px';
+            toast.classList.remove('visible');
+            void toast.offsetWidth;
+            toast.classList.add('visible');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(function() {
+                toast.classList.remove('visible');
+            }, 2000);
+        }
+
+        function hideComingSoonToast() {
+            var toast = document.getElementById('coming-soon-toast');
+            if (toast) toast.classList.remove('visible');
+        }
+
+        function highlightText(text, keyword) {
+            if (!keyword || !text) return text;
+            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
+        }
+
+        function performLocalSearch(keyword) {
+            if (!keyword || !keyword.trim()) return [];
+            const kw = keyword.trim().toLowerCase();
+            return allHerbsFlat.filter(h => {
+                return h.name.toLowerCase().includes(kw)
+                    || (h.alias && h.alias.toLowerCase().includes(kw))
+                    || h.city.toLowerCase().includes(kw)
+                    || (h.nature && h.nature.toLowerCase().includes(kw))
+                    || (h.efficacy && h.efficacy.toLowerCase().includes(kw))
+                    || (h.indication && h.indication.toLowerCase().includes(kw));
+            }).sort((a, b) => {
+                return (a.name.toLowerCase().includes(kw) ? 0 : 1) - (b.name.toLowerCase().includes(kw) ? 0 : 1);
+            });
+        }
+
+        async function performApiSearch(keyword) {
+            try {
+                const res = await fetch(`/api/herbs/search?keyword=${encodeURIComponent(keyword)}`);
+                const data = await res.json();
+                if (data.success && data.data && data.data.length > 0) {
+                    return data.data.map(h => {
+                        var frontendId = getFrontendIdByDbId(h.id);
+                        return {
+                            id: String(frontendId), name: h.name, alias: h.alias || '', icon: '🌿',
+                            nature: h.nature || '', meridian: h.meridian || '', efficacy: h.efficacy || '',
+                            indication: h.indication || '', city: h.origin || '', recipes: null, video: null
+                        };
+                    });
+                }
+                return [];
+            } catch (e) { return null; }
+        }
+
+        function updateContentOnly() {
+            const contentEl = document.getElementById('page-content');
+            if (!contentEl) { render(); return; }
+            contentEl.innerHTML = currentState.level === 'search' ? renderSearchResults() : '';
+        }
+
+        async function executeSearch(keyword) {
+            if (!keyword || !keyword.trim()) {
+                currentState.searchResults = null;
+                currentState.searchLoading = false;
+                updateContentOnly();
+                return;
+            }
+            currentState.searchLoading = true;
+            updateContentOnly();
+            const localResults = performLocalSearch(keyword);
+            const apiResults = await performApiSearch(keyword);
+            if (apiResults === null) {
+                currentState.searchResults = localResults;
+            } else {
+                const merged = [...localResults];
+                const existingIds = new Set(localResults.map(r => r.id));
+                apiResults.forEach(r => { if (!existingIds.has(r.id)) { merged.push(r); existingIds.add(r.id); } });
+                currentState.searchResults = merged;
+            }
+            currentState.searchLoading = false;
+            updateContentOnly();
+        }
+
+        function handleSearchInput(e) {
+            const value = e.target.value;
+            currentState.searchQuery = value;
+            const clearBtn = document.getElementById('search-clear');
+            if (clearBtn) clearBtn.classList.toggle('visible', value.length > 0);
+            if (searchTimer) clearTimeout(searchTimer);
+            if (!value.trim()) {
+                currentState.searchResults = null;
+                currentState.searchLoading = false;
+                if (currentState.level === 'search') {
+                        currentState.level = 'national';
+                        render();
+                    }
+                    return;
+            }
+            currentState.level = 'search';
+            currentState.searchLoading = true;
+            const spinner = document.getElementById('search-spinner');
+            if (spinner) spinner.classList.add('visible');
+            const contentEl = document.getElementById('page-content');
+            if (contentEl) contentEl.innerHTML = renderSearchResults();
+            searchTimer = setTimeout(() => executeSearch(value), 350);
+        }
+
+        function handleSearchClear() {
+            currentState.searchQuery = '';
+            currentState.searchResults = null;
+            currentState.searchLoading = false;
+            currentState.level = 'national';
+            render();
+        }
+
+        function handleHotTagClick(keyword) {
+            currentState.searchQuery = keyword;
+            currentState.level = 'search';
+            render();
+            setTimeout(() => {
+                const input = document.getElementById('search-input');
+                if (input) input.value = keyword;
+                executeSearch(keyword);
+            }, 50);
+        }
+
+        function renderSearchBar(placeholder) {
+            return `
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-input"
+                           placeholder="${placeholder || '搜索药材名称、功效、产地...'}"
+                           value="${currentState.searchQuery.replace(/"/g, '&quot;')}"
+                           oninput="handleSearchInput(event)"
+                           autocomplete="off" enterkeyhint="search">
+                    <button class="search-clear ${currentState.searchQuery ? 'visible' : ''}"
+                            id="search-clear" onclick="handleSearchClear()">✕</button>
+                    <div class="search-spinner ${currentState.searchLoading ? 'visible' : ''}" id="search-spinner"></div>
+                </div>`;
+        }
+
+        function renderSearchResults() {
+            const keyword = currentState.searchQuery;
+            const results = currentState.searchResults;
+            const loading = currentState.searchLoading;
+            if (loading) {
+                return `<div class="search-status">🔍 正在搜索"${keyword}"...</div>
+                    <div class="search-results-container">${Array(3).fill('').map(() =>
+                        `<div class="search-result-item" style="opacity:0.5;">
+                            <div class="search-result-icon" style="background:#f0f0f0;">🌿</div>
+                            <div class="search-result-info">
+                                <div class="search-result-name" style="background:#f0f0f0;height:16px;border-radius:4px;width:60%;"></div>
+                                <div class="search-result-meta" style="background:#f0f0f0;height:12px;border-radius:4px;width:80%;margin-top:6px;"></div>
+                            </div></div>`).join('')}</div>`;
+            }
+            if (results === null) {
+                return `<div class="search-hot-tags"><h4>🔥 热门搜索</h4><div class="hot-tags-wrap">
+                    ${['陈皮', '五指毛桃', '灵芝', '石斛', '砂仁', '巴戟天', '化橘红', '沉香'].map(tag =>
+                        `<button class="hot-tag" onclick="handleHotTagClick('${tag}')">${tag}</button>`).join('')}</div></div>`;
+            }
+            if (results.length === 0) {
+                return `<div class="empty-state"><div class="empty-icon">🔍</div>
+                    <div class="empty-text">未找到"${keyword}"相关药材</div>
+                    <p style="margin-top:10px;font-size:13px;">试试搜索：陈皮、灵芝、五指毛桃...</p></div>`;
+            }
+            return `<div class="search-status">找到 ${results.length} 个与"${keyword}"相关的结果</div>
+                <div class="search-results-container">${results.map(herb => {
+                    var displayName = herb.name;
+                    var sameNameCount = results.filter(function(h) { return h.name === herb.name; }).length;
+                    if (sameNameCount > 1 && herb.city) {
+                        displayName = herb.name + '<span style="font-size:12px;color:#8E8E8E;font-weight:400;margin-left:4px">(' + herb.city.replace(/市$/, '') + ')</span>';
+                    }
+                    return `
+                    <div class="search-result-item" onclick="navigateToDetail('${herb.id}')">
+                        <div class="search-result-icon">${getHerbImgHtml(herb.id, herb.icon || '🌿', 'search', herb.name)}<span class="herb-emoji-fallback" style="display:none">${herb.icon || '🌿'}</span></div>
+                        <div class="search-result-info">
+                            <div class="search-result-name">${highlightText(herb.name, keyword)}${sameNameCount > 1 && herb.city ? '<span style="font-size:12px;color:#8E8E8E;font-weight:400;margin-left:4px">(' + herb.city.replace(/市$/, '') + ')</span>' : ''}</div>
+                            <div class="search-result-meta">
+                                ${herb.city ? '📍 ' + highlightText(herb.city, keyword) + ' · ' : ''}
+                                ${herb.nature ? highlightText(herb.nature, keyword) + ' · ' : ''}
+                                ${herb.efficacy ? highlightText(herb.efficacy.slice(0, 15), keyword) + '...' : ''}
+                            </div></div><span class="search-result-arrow">›</span></div>`;
+                }).join('')}</div>`;
+        }
+
+        async function loadGeoJson(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Failed to load ' + url);
+            return await res.json();
+        }
+
+        async function initChinaMap() {
+            const container = document.getElementById('map-chart');
+            if (!container) return;
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            currentChart = echarts.init(container);
+
+            if (!chinaGeoLoaded) {
+                try {
+                    const geoJson = await loadGeoJson('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json');
+                    echarts.registerMap('china', geoJson);
+                    chinaGeoLoaded = true;
+                } catch (e) {
+                    console.error('Failed to load China GeoJSON:', e);
+                    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🗺️</div><div class="empty-text">地图数据加载失败，请刷新重试</div></div>';
+                    return;
+                }
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(255,255,255,0.96)',
+                    borderColor: '#4A7C59',
+                    borderWidth: 1,
+                    textStyle: { color: '#2D3436', fontSize: 13 },
+                    formatter: function(params) {
+                        if (params.value) {
+                            return `<b>${params.name}</b><br/>道地药材：<b style="color:#4A7C59">${params.value}</b> 味`;
+                        }
+                        return `<b>${params.name}</b><br/>数据收录中...`;
+                    }
+                },
+                series: [{
+                    name: '道地药材',
+                    type: 'map',
+                    map: 'china',
+                    roam: true,
+                    zoom: 1.2,
+                    scaleLimit: { min: 0.8, max: 6 },
+                    label: {
+                        show: true,
+                        fontSize: 9,
+                        color: '#4A4A4A'
+                    },
+                    emphasis: {
+                        label: { show: true, fontSize: 13, fontWeight: 'bold', color: '#2D3436' },
+                        itemStyle: { areaColor: '#9BC9A5', shadowBlur: 15, shadowColor: 'rgba(74,124,89,0.4)' }
+                    },
+                    select: {
+                        label: { show: true, color: '#fff' },
+                        itemStyle: { areaColor: '#4A7C59' }
+                    },
+                    itemStyle: {
+                        borderColor: '#fff',
+                        borderWidth: 1,
+                        areaColor: '#D4E8D8'
+                    },
+                    data: provinceHerbData.map(item => ({
+                        ...item,
+                        itemStyle: item.name === '广东'
+                            ? { areaColor: '#4A7C59' }
+                            : { areaColor: '#D4E8D8' },
+                        label: item.name === '广东'
+                            ? { show: true, fontSize: 11, fontWeight: 'bold', color: '#fff' }
+                            : undefined
+                    }))
+                }]
+            };
+
+            currentChart.setOption(option);
+            currentChart.off('click');
+            currentChart.on('click', function(params) {
+                if (!params.name) return;
+                hideComingSoonToast();
+                if (params.name === '广东' || params.name === '广东省') {
+                    navigateToProvince('广东省');
+                } else {
+                    var event = params.event && params.event.event;
+                    var x = event ? event.clientX : window.innerWidth / 2;
+                    var y = event ? event.clientY : window.innerHeight / 2;
+                    showComingSoonToast(params.name, x, y);
+                }
+            });
+
+            window.addEventListener('resize', function() {
+                if (currentChart) currentChart.resize();
+            });
+        }
+
+        const cityCoords = {
+            '广州市': [113.23, 23.16], '韶关市': [113.60, 24.81], '深圳市': [114.07, 22.62],
+            '珠海市': [113.52, 22.30], '汕头市': [116.69, 23.39], '佛山市': [113.11, 23.05],
+            '江门市': [113.08, 22.58], '湛江市': [110.36, 21.27], '茂名市': [110.93, 21.66],
+            '肇庆市': [112.46, 23.05], '惠州市': [114.42, 23.09], '梅州市': [116.12, 24.29],
+            '汕尾市': [115.37, 22.79], '河源市': [114.68, 23.73], '阳江市': [111.95, 21.86],
+            '清远市': [113.01, 23.70], '东莞市': [113.75, 23.05], '中山市': [113.38, 22.52],
+            '潮州市': [116.63, 23.66], '揭阳市': [116.35, 23.55], '云浮市': [112.04, 22.93]
+        };
+
+        async function initGuangdongMap() {
+            const container = document.getElementById('map-chart');
+            if (!container) return;
+
+            await new Promise(function(resolve) {
+                onMarkerIconsReady(resolve);
+                setTimeout(resolve, 8000);
+            });
+
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            currentChart = echarts.init(container);
+
+            if (!guangdongGeoLoaded) {
+                try {
+                    const geoJson = await loadGeoJson('https://geo.datav.aliyun.com/areas_v3/bound/440000_full.json');
+                    echarts.registerMap('guangdong', geoJson);
+                    guangdongGeoLoaded = true;
+                } catch (e) {
+                    console.error('Failed to load Guangdong GeoJSON:', e);
+                    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🗺️</div><div class="empty-text">广东省地图数据加载失败，请刷新重试</div></div>';
+                    return;
+                }
+            }
+
+            const cityData = Object.entries(herbData.cities).map(([city, herbs]) => ({
+                name: city.replace('市', ''),
+                value: herbs.length
+            }));
+
+            const herbScatterData = [];
+            const gridCols = 3;
+            const colSpacing = 0.22;
+            const rowSpacing = 0.32;
+            Object.entries(herbData.cities).forEach(([city, herbs]) => {
+                const coords = cityCoords[city];
+                if (!coords) return;
+                const totalRows = Math.ceil(herbs.length / gridCols);
+                const startOffsetLng = -((Math.min(herbs.length, gridCols) - 1) * colSpacing) / 2;
+                const startOffsetLat = -((totalRows - 1) * rowSpacing) / 2;
+                herbs.forEach((herb, idx) => {
+                    const col = idx % gridCols;
+                    const row = Math.floor(idx / gridCols);
+                    var markerSymbol = herbMarkerIcons[herb.id]
+                        ? 'image://' + herbMarkerIcons[herb.id]
+                        : 'path://M12,2C8.13,2,5,5.13,5,9c0,5.25,7,13,7,13s7-7.75,7-13C19,5.13,15.87,2,12,2z';
+                    herbScatterData.push({
+                        name: herb.name,
+                        value: [coords[0] + startOffsetLng + col * colSpacing, coords[1] + startOffsetLat + row * rowSpacing, herb.id],
+                        herbId: herb.id,
+                        herbIcon: herb.icon,
+                        herbLabel: herb.name.charAt(0),
+                        herbNature: herb.nature,
+                        herbEfficacy: herb.efficacy,
+                        cityName: city,
+                        symbolSize: 28,
+                        symbol: markerSymbol
+                    });
+                });
+            });
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(255,255,255,0.96)',
+                    borderColor: '#4A7C59',
+                    borderWidth: 1,
+                    textStyle: { color: '#2D3436', fontSize: 13 },
+                    formatter: function(params) {
+                        if (params.seriesType === 'scatter' && params.data.herbId) {
+                            const h = params.data;
+                            const imgUrl = herbDbImages[h.herbId] || herbImages[h.herbId];
+                            const imgHtml = imgUrl ? '<div style="width:72px;height:72px;border-radius:50%;overflow:hidden;margin:0 auto 8px;border:2px solid #4A7C59"><img src="' + imgUrl + '" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.outerHTML=\'<div style=font-size:40px;text-align:center;margin:0 0 8px>' + h.herbIcon + '</div>\'"></div>' : '<div style="font-size:40px;text-align:center;margin:0 0 8px">' + h.herbIcon + '</div>';
+                            return imgHtml + '<div style="text-align:center"><b style="font-size:16px;color:#2D3436">' + h.name + '</b></div>' +
+                                '<div style="text-align:center"><span style="color:#8E8E8E;font-size:11px">📍 ' + h.cityName + '</span></div>' +
+                                '<div style="text-align:center;margin-top:4px"><span style="color:#4A7C59;font-size:12px">' + h.herbNature + '</span></div>' +
+                                '<div style="text-align:center"><span style="font-size:12px;color:#555">' + h.herbEfficacy + '</span></div>' +
+                                '<div style="text-align:center;margin-top:6px"><span style="color:#4A7C59;font-size:11px;cursor:pointer">点击查看详情 →</span></div>';
+                        }
+                        if (params.value !== undefined && !isNaN(params.value)) {
+                            const fullName = params.name + '市';
+                            const herbs = herbData.cities[fullName];
+                            const herbNames = herbs ? herbs.map(h => h.name).join('、') : '';
+                            return `<b>${fullName}</b><br/>道地药材：<b style="color:#4A7C59">${params.value}</b> 味<br/><span style="font-size:11px;color:#8E8E8E">${herbNames}</span>`;
+                        }
+                        return `<b>${params.name}</b>`;
+                    }
+                },
+                geo: {
+                    map: 'guangdong',
+                    roam: true,
+                    zoom: 1.1,
+                    scaleLimit: { min: 0.8, max: 10 },
+                    label: { show: true, fontSize: 10, color: '#4A4A4A' },
+                    itemStyle: { borderColor: '#fff', borderWidth: 1.5, areaColor: '#E8F0EA' },
+                    emphasis: {
+                        label: { show: true, fontSize: 13, fontWeight: 'bold', color: '#2D3436' },
+                        itemStyle: { areaColor: '#9BC9A5', shadowBlur: 15, shadowColor: 'rgba(74,124,89,0.4)' }
+                    },
+                    select: {
+                        label: { show: true, color: '#fff' },
+                        itemStyle: { areaColor: '#4A7C59' }
+                    }
+                },
+                series: [
+                    {
+                        name: '道地药材',
+                        type: 'map',
+                        geoIndex: 0,
+                        data: cityData
+                    },
+                    {
+                        id: 'herbScatter',
+                        name: '药材图标',
+                        type: 'scatter',
+                        coordinateSystem: 'geo',
+                        geoIndex: 0,
+                        data: herbScatterData,
+                        symbolSize: function(val, params) {
+                            return params.data.symbolSize || 28;
+                        },
+                        label: {
+                            show: true,
+                            formatter: function(params) { return params.data.herbLabel; },
+                            fontSize: 0,
+                            color: 'transparent',
+                            position: 'inside',
+                            textBorderColor: 'transparent'
+                        },
+                        emphasis: {
+                            label: { show: false },
+                            itemStyle: {
+                                shadowBlur: 20,
+                                shadowColor: 'rgba(74,124,89,0.7)',
+                                borderColor: '#2D5A3D',
+                                borderWidth: 3
+                            },
+                            scale: 1.3
+                        },
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: '#6BAF7D' },
+                                    { offset: 1, color: '#3D7A4F' }
+                                ]
+                            },
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            shadowBlur: 8,
+                            shadowColor: 'rgba(0,0,0,0.3)'
+                        }
+                    }
+                ]
+            };
+
+            currentChart.setOption(option);
+            currentChart.off('click');
+            currentChart.on('click', function(params) {
+                if (params.seriesType === 'scatter' && params.data && params.data.herbId) {
+                    navigateToDetail(params.data.herbId);
+                    return;
+                }
+                if (params.seriesType === 'map' && params.name) {
+                    var fullName = params.name.endsWith('市') ? params.name : params.name + '市';
+                    if (herbData.cities[fullName]) {
+                        navigateToCity(fullName);
+                    }
+                }
+            });
+
+            var guangdongMapZoom = 1.1;
+            currentChart.on('georoam', function(params) {
+                if (params.zoom && params.zoom !== 1) {
+                    guangdongMapZoom *= params.zoom;
+                }
+                var baseSize = 28;
+                var baseZoom = 1.1;
+                var scale = Math.max(0.5, Math.min(2.5, guangdongMapZoom / baseZoom));
+                var newSymbolSize = Math.round(baseSize * scale);
+                currentChart.setOption({
+                    series: [{
+                        id: 'herbScatter',
+                        symbolSize: newSymbolSize
+                    }]
+                });
+            });
+
+            window.addEventListener('resize', function() {
+                if (currentChart) currentChart.resize();
+            });
+        }
+
+        function renderNationalMap() {
+            return `
+                <div class="top-nav">
+                    <div class="nav-header">
+                        <span style="opacity:0;width:36px"></span>
+                        <span class="page-title title-font">道地药材 · 中华瑰宝</span>
+                        <div class="nav-actions">
+                            <button class="icon-btn" onclick="navigateToFeedback()" title="问题反馈">💬</button>
+                            <button class="icon-btn" onclick="navigateToRecipes()" title="食谱大全">🍲</button>
+                        </div>
+                    </div>
+                    ${renderSearchBar('搜索药材名称、功效、产地...')}
+                </div>
+                <div id="page-content">
+                    ${currentState.level === 'search' ? renderSearchResults() : `
+                    <div class="breadcrumb"><div class="breadcrumb-path">
+                        <span class="breadcrumb-item active">📍 全国中医药地图</span>
+                        <span style="margin-left:auto;font-size:12px;color:#8E8E8E">点击省份进入 →</span>
+                    </div></div>
+                    <div class="map-chart-container" id="map-chart" role="img" aria-label="中国中医药地图，点击广东省查看详情，点击其他省份显示敬请期待" tabindex="0">
+                        <div class="map-loading" id="map-loading">
+                            <div class="spinner"></div>
+                            <div class="loading-text">正在加载中国地图...</div>
+                        </div>
+                    </div>
+                    <div class="content-section">
+                        <h3 class="section-title title-font">热门产区</h3>
+                        <div class="city-grid">
+                            <div class="city-card" onclick="navigateToProvince('广东省')"><span class="city-icon">🌿</span><div class="city-name">广东省</div><div class="city-herbs">广陈皮、化橘红、巴戟天等 34味</div></div>
+                            <div class="city-card" style="opacity:0.6"><span class="city-icon">🏔️</span><div class="city-name">云南省</div><div class="city-herbs">三七、天麻、虫草等 28味</div></div>
+                            <div class="city-card" style="opacity:0.6"><span class="city-icon">🌾</span><div class="city-name">浙江省</div><div class="city-herbs">浙贝、杭菊、白芍等 22味</div></div>
+                            <div class="city-card" style="opacity:0.6"><span class="city-icon">🏛️</span><div class="city-name">河南省</div><div class="city-herbs">怀药、山药、牛膝等 20味</div></div>
+                        </div>
+                    </div>`}
+                </div>`;
+        }
+
+        function renderProvincialMap() {
+            const cities = Object.keys(herbData.cities);
+            return `
+                <div class="top-nav">
+                    <div class="nav-header">
+                        <button class="back-btn" onclick="navigateBack()">←</button>
+                        <span class="page-title title-font">广东省中医药地图</span>
+                        <div class="nav-actions"></div>
+                    </div>
+                    ${renderSearchBar('搜索广东省内道地药材...')}
+                </div>
+                <div id="page-content">
+                    ${currentState.level === 'search' ? renderSearchResults() : `
+                    <div class="breadcrumb"><div class="breadcrumb-path">
+                        <span class="breadcrumb-item" onclick="navigateToNational()">全国地图</span>
+                        <span class="breadcrumb-sep">›</span>
+                        <span class="breadcrumb-item active">📍 广东省</span>
+                        <span style="margin-left:auto;font-size:12px;color:#8E8E8E">点击城市进入 →</span>
+                    </div></div>
+                    <div class="map-chart-container" id="map-chart" role="img" aria-label="广东省中医药地图，点击城市或药材图标查看详情" tabindex="0">
+                        <div class="map-loading" id="map-loading">
+                            <div class="spinner"></div>
+                            <div class="loading-text">正在加载广东省地图...</div>
+                        </div>
+                    </div>
+                    <div class="content-section">
+                        <h3 class="section-title title-font">选择城市查看道地药材</h3>
+                        <div class="city-grid">${cities.map(city => {
+                            const herbs = herbData.cities[city];
+                            return `<div class="city-card" onclick="navigateToCity('${city}')">
+                                <span class="city-icon">📍</span>
+                                <div class="city-name">${city}</div>
+                                <div class="city-herbs">${herbs.map(h => h.name).slice(0, 2).join('、')}${herbs.length > 2 ? '...' : ''} (${herbs.length}味)</div>
+                            </div>`;
+                        }).join('')}</div>
+                    </div>`}
+                </div>`;
+        }
+
+        function renderCityHerbs() {
+            const city = currentState.city;
+            const herbs = herbData.cities[city] || [];
+            return `
+                <div class="top-nav">
+                    <div class="nav-header">
+                        <button class="back-btn" onclick="navigateBack()">←</button>
+                        <span class="page-title title-font">${city} · 道地药材</span>
+                        <div class="nav-actions"></div>
+                    </div>
+                    ${renderSearchBar('搜索' + city + '的道地药材...')}
+                </div>
+                <div id="page-content">
+                    ${currentState.level === 'search' ? renderSearchResults() : `
+                    <div class="breadcrumb"><div class="breadcrumb-path">
+                        <span class="breadcrumb-item" onclick="navigateToNational()">全国地图</span>
+                        <span class="breadcrumb-sep">›</span>
+                        <span class="breadcrumb-item" onclick="navigateToProvince('广东省')">广东省</span>
+                        <span class="breadcrumb-sep">›</span>
+                        <span class="breadcrumb-item active">📍 ${city}</span>
+                    </div></div>
+                    <div class="content-section">
+                        <h3 class="section-title title-font">${city}道地药材 (${herbs.length}味)</h3>
+                        ${herbs.length > 0 ? `<div class="herb-grid">${herbs.map(herb => `
+                            <div class="herb-card" onclick="navigateToDetail('${herb.id}')">
+                                <div class="herb-image"><div class="img-skeleton"></div>${getHerbImgHtml(herb.id, herb.icon, 'card', herb.name)}<span class="herb-emoji-fallback" style="display:none">${herb.icon}</span>${herb.video ? '<span class="herb-badge">🎬 ' + (typeof herb.video === 'object' && herb.video.published ? '视频' : '敬请期待') + '</span>' : ''}</div>
+                                <div class="herb-info">
+                                    <div class="herb-name">${herb.name}</div>
+                                    <span class="herb-nature">${herb.nature}</span>
+                                    <div class="herb-efficacy">${herb.efficacy.slice(0, 20)}...</div>
+                                </div>
+                            </div>`).join('')}</div>` : `<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">该城市道地药材数据正在收录中...</div></div>`}
+                    </div>`}
+                </div>`;
+        }
+
+        function renderHerbDetail() {
+            let herb = null;
+            for (const city of Object.keys(herbData.cities)) {
+                const found = herbData.cities[city].find(h => h.id === currentState.herbId);
+                if (found) { herb = found; currentState.city = city; break; }
+            }
+            if (!herb) return '<div>药材未找到</div>';
+            const isFavorite = currentState.favoriteHerbs.includes(herb.id);
+            return `
+                <div class="detail-transition">
+                <div class="herb-detail-header">
+                    <div class="detail-nav">
+                        <button class="detail-back-btn" onclick="navigateBack()">←</button>
+                        <div class="detail-actions">
+                            <button class="detail-action-btn ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${herb.id}',this)">${isFavorite ? '♥' : '♡'}</button>
+                            <button class="detail-action-btn" onclick="alert('分享功能')">↗</button>
+                        </div>
+                    </div>
+                    <div class="herb-detail-image"><div class="img-skeleton"></div>${getHerbImgHtml(herb.id, herb.icon, 'detail', herb.name)}<span class="herb-emoji-fallback" style="display:none;font-size:100px;position:relative;z-index:1">${herb.icon}</span></div>
+                    <div id="herb-gallery" class="herb-gallery" style="display:none"></div>
+                </div>
+                <div class="detail-content">
+                    <h1 class="detail-title title-font">${herb.name}</h1>
+                    <p class="detail-subtitle">${herb.alias}</p>
+                    <div class="detail-tags">
+                        <span class="detail-tag">📍 ${currentState.city}</span>
+                        <span class="detail-tag">🌡️ ${herb.nature}</span>
+                        <span class="detail-tag">🎯 ${herb.meridian}</span>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-title">📋 基本信息</div>
+                        <div class="info-row"><span class="info-label">药材名称</span><span class="info-value"><b>${herb.name}</b></span></div>
+                        <div class="info-row"><span class="info-label">别名</span><span class="info-value">${herb.alias || '—'}</span></div>
+                        <div class="info-row"><span class="info-label">药性</span><span class="info-value">${herb.nature}</span></div>
+                        <div class="info-row"><span class="info-label">归经</span><span class="info-value">${herb.meridian}</span></div>
+                        <div class="info-row"><span class="info-label">产地</span><span class="info-value">${currentState.city}</span></div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3 class="detail-section-title title-font">功效主治</h3>
+                        <div class="efficacy-box">
+                            <div class="efficacy-title">【功效】</div>
+                            <div class="efficacy-text">${herb.efficacy}</div><br>
+                            <div class="efficacy-title">【主治】</div>
+                            <div class="efficacy-text">${herb.indication}</div>
+                        </div>
+                    </div>
+
+                    ${herb.dosage ? `<div class="dosage-box"><div class="dosage-title">💊 用法用量</div><div class="dosage-text">${herb.dosage}</div>${herb.usage ? `<br><div class="dosage-text">${herb.usage}</div>` : ''}</div>` : ''}
+
+                    ${herb.modern ? `<div class="modern-box"><div class="modern-title">🔬 现代研究</div><div class="modern-text">${herb.modern}</div></div>` : ''}
+
+                    ${herb.contraindication ? `<div class="warning-box"><div class="warning-title">⚠️ 使用注意</div><div class="warning-text">${herb.contraindication}</div></div>` : ''}
+
+                    <div id="herb-recipe-section"></div>
+                    <div id="herb-video-section"></div>
+
+                    <div class="comment-section" id="comment-section">
+                        <div class="comment-section-title">💬 评论区 <span class="comment-count" id="comment-count">0</span></div>
+                        <div class="like-bar" id="like-bar">
+                            <button class="like-btn" id="like-btn" onclick="toggleLike('herb','${herb.id}')">
+                                <span class="like-icon" id="like-icon">🤍</span>
+                                <span class="like-count" id="like-count">0</span>
+                            </button>
+                        </div>
+                        <div class="comment-form" id="comment-form">
+                            <div class="comment-form-row">
+                                <input type="text" class="comment-input" id="comment-nickname" placeholder="您的昵称" maxlength="20">
+                            </div>
+                            <textarea class="comment-textarea" id="comment-content" placeholder="分享您对这味药材的了解或使用心得..." maxlength="500" oninput="updateCommentCharCount()"></textarea>
+                            <div class="comment-form-footer">
+                                <span class="comment-char-count" id="comment-char-count">0/500</span>
+                                <button class="comment-submit-btn" id="comment-submit-btn" onclick="submitComment('${herb.id}')">发表评论</button>
+                            </div>
+                        </div>
+                        <div id="comment-list-container">
+                            <div class="comment-loading">加载评论中...</div>
+                        </div>
+                    </div>
+                    <div style="height:40px;"></div>
+                </div>
+                </div>`;
+        }
+
+        function updateCommentCharCount() {
+            var textarea = document.getElementById('comment-content');
+            var counter = document.getElementById('comment-char-count');
+            if (!textarea || !counter) return;
+            var len = textarea.value.length;
+            counter.textContent = len + '/500';
+            counter.classList.remove('char-warn', 'char-error');
+            if (len >= 500) {
+                counter.classList.add('char-error');
+            } else if (len >= 450) {
+                counter.classList.add('char-warn');
+            }
+        }
+
+        var currentCommentHerbId = null;
+
+        function getVisitorId() {
+            var vid = localStorage.getItem('visitor_id');
+            if (!vid) {
+                vid = 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('visitor_id', vid);
+            }
+            return vid;
+        }
+
+        function trackPageView(pageType, pageId) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/stats/page-view', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({
+                page_type: pageType,
+                page_id: pageId || '',
+                visitor_id: getVisitorId(),
+                referer: document.referrer || ''
+            }));
+        }
+
+        function loadLikeCount(targetType, targetId, countElId, btnElId, iconElId) {
+            var cId = countElId || 'like-count';
+            var bId = btnElId || 'like-btn';
+            var iId = iconElId || 'like-icon';
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/likes/count/' + targetType + '/' + targetId, true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        var countEl = document.getElementById(cId);
+                        if (countEl && resp.success && resp.data) countEl.textContent = resp.data.count || 0;
+                    } catch(e) {}
+                }
+            };
+            xhr.send();
+            var liked = localStorage.getItem('liked_' + targetType + '_' + targetId);
+            if (liked === '1') {
+                var btn = document.getElementById(bId);
+                var icon = document.getElementById(iId);
+                if (btn) btn.classList.add('liked');
+                if (icon) icon.textContent = '❤️';
+            } else {
+                var btn = document.getElementById(bId);
+                var icon = document.getElementById(iId);
+                if (btn) btn.classList.remove('liked');
+                if (icon) icon.textContent = '🤍';
+            }
+        }
+
+        function toggleLike(targetType, targetId, countElId, btnElId, iconElId) {
+            var cId = countElId || 'like-count';
+            var bId = btnElId || 'like-btn';
+            var iId = iconElId || 'like-icon';
+            var key = 'liked_' + targetType + '_' + targetId;
+            var liked = localStorage.getItem(key) === '1';
+            var btn = document.getElementById(bId);
+            var icon = document.getElementById(iId);
+            var countEl = document.getElementById(cId);
+
+            if (btn) btn.disabled = true;
+
+            var xhr = new XMLHttpRequest();
+            if (liked) {
+                xhr.open('DELETE', '/api/likes', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() {
+                    if (btn) btn.disabled = false;
+                    if (xhr.status === 200) {
+                        try {
+                            var resp = JSON.parse(xhr.responseText);
+                            if (resp.success) {
+                                localStorage.removeItem(key);
+                                if (btn) btn.classList.remove('liked');
+                                if (icon) icon.textContent = '🤍';
+                                if (countEl && resp.data) countEl.textContent = resp.data.count;
+                            }
+                        } catch(e) {}
+                    }
+                };
+                xhr.onerror = function() {
+                    if (btn) btn.disabled = false;
+                };
+                xhr.send(JSON.stringify({ target_type: targetType, target_id: targetId, visitor_id: getVisitorId() }));
+            } else {
+                xhr.open('POST', '/api/likes', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() {
+                    if (btn) btn.disabled = false;
+                    if (xhr.status === 200) {
+                        try {
+                            var resp = JSON.parse(xhr.responseText);
+                            if (resp.success) {
+                                localStorage.setItem(key, '1');
+                                if (btn) btn.classList.add('liked');
+                                if (icon) icon.textContent = '❤️';
+                                if (countEl && resp.data) countEl.textContent = resp.data.count;
+                            }
+                        } catch(e) {}
+                    }
+                };
+                xhr.onerror = function() {
+                    if (btn) btn.disabled = false;
+                };
+                xhr.send(JSON.stringify({ target_type: targetType, target_id: targetId, visitor_id: getVisitorId() }));
+            }
+        }
+
+        var feedbackType = '功能异常';
+        function openFeedbackModal() {
+            var modal = document.getElementById('feedback-modal');
+            if (modal) modal.classList.add('visible');
+        }
+        function closeFeedbackModal() {
+            var modal = document.getElementById('feedback-modal');
+            if (modal) modal.classList.remove('visible');
+        }
+        function selectFeedbackType(type, el) {
+            feedbackType = type;
+            document.querySelectorAll('.feedback-type-btn').forEach(function(b) { b.classList.remove('active'); });
+            if (el) el.classList.add('active');
+        }
+
+        function updateGlobalFbCharCount() {
+            var content = document.getElementById('feedback-content');
+            var charCount = document.getElementById('feedback-char-count');
+            var charWarn = document.getElementById('feedback-char-warn');
+            if (!content) return;
+            var len = content.value.length;
+            if (charCount) {
+                charCount.textContent = '已输入' + len + '字/1000字';
+                charCount.classList.remove('char-warn', 'char-error');
+            }
+            if (charWarn) charWarn.style.display = 'none';
+            if (len >= 1000) {
+                if (charCount) charCount.classList.add('char-error');
+                if (charWarn) { charWarn.textContent = '问题描述不能超过1000字'; charWarn.style.display = 'inline'; }
+            } else if (len >= 900) {
+                if (charCount) charCount.classList.add('char-warn');
+            }
+        }
+
+        function submitFeedback() {
+            var content = document.getElementById('feedback-content');
+            var contact = document.getElementById('feedback-contact');
+            if (!content || !content.value.trim()) {
+                showCommentToast('请输入反馈内容');
+                return;
+            }
+            var btn = document.querySelector('.feedback-submit-btn');
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/feedback', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                btn.disabled = false;
+                btn.textContent = '提交反馈';
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success) {
+                            content.value = '';
+                            if (contact) contact.value = '';
+                            closeFeedbackModal();
+                            showCommentToast('感谢您的反馈！');
+                        } else {
+                            showCommentToast(resp.message || '提交失败');
+                        }
+                    } catch(e) { showCommentToast('提交失败'); }
+                } else { showCommentToast('网络错误'); }
+            };
+            xhr.onerror = function() { btn.disabled = false; btn.textContent = '提交反馈'; showCommentToast('网络错误'); };
+            xhr.send(JSON.stringify({ type: feedbackType, content: content.value.trim(), contact: contact ? contact.value.trim() : '' }));
+        }
+
+        function loadHerbVideos(herbId, herb) {
+            var dbId = getDbIdByFrontendId(herbId);
+            var videoSection = document.getElementById('herb-video-section');
+            if (!videoSection) return;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/videos/herb/' + dbId, true);
+            xhr.timeout = 8000;
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        var apiVideos = resp.data || [];
+                        if (apiVideos.length > 0) {
+                            var html = '<div class="detail-section"><h3 class="detail-section-title title-font">相关视频</h3>';
+                            apiVideos.forEach(function(v) {
+                                html += '<div class="video-card" onclick="window.open(\'' + v.file_path + '\',\'_blank\')">'
+                                    + '<div class="video-play-btn">▶</div>'
+                                    + '<div class="video-title">' + escapeHtml(v.title) + '</div>'
+                                    + '</div>';
+                            });
+                            html += '</div>';
+                            videoSection.innerHTML = html;
+                        } else if (herb.video && typeof herb.video === 'object') {
+                            videoSection.innerHTML = '<div class="detail-section"><h3 class="detail-section-title title-font">相关视频</h3>'
+                                + (herb.video.published
+                                    ? '<div class="video-card" onclick="playVideo(\'' + herb.video.name + '\', event)"><div class="video-play-btn">▶</div><div class="video-title">' + herb.video.name + '</div><div class="video-duration">03:42</div></div>'
+                                    : '<div class="video-card coming-soon"><div class="coming-soon-overlay"><div class="cs-icon">🎬</div><div class="cs-text">敬请期待</div></div></div>')
+                                + '</div>';
+                        } else {
+                            videoSection.innerHTML = '';
+                        }
+                    } catch(e) {
+                        videoSection.innerHTML = '';
+                    }
+                } else {
+                    videoSection.innerHTML = '';
+                }
+            };
+            xhr.onerror = xhr.ontimeout = function() {
+                if (herb.video && typeof herb.video === 'object') {
+                    videoSection.innerHTML = '<div class="detail-section"><h3 class="detail-section-title title-font">相关视频</h3>'
+                        + (herb.video.published
+                            ? '<div class="video-card" onclick="playVideo(\'' + herb.video.name + '\', event)"><div class="video-play-btn">▶</div><div class="video-title">' + herb.video.name + '</div><div class="video-duration">03:42</div></div>'
+                            : '<div class="video-card coming-soon"><div class="coming-soon-overlay"><div class="cs-icon">🎬</div><div class="cs-text">敬请期待</div></div></div>')
+                        + '</div>';
+                } else {
+                    videoSection.innerHTML = '';
+                }
+            };
+            xhr.send();
+        }
+
+        function loadHerbRecipes(herbId, herb) {
+            var dbId = getDbIdByFrontendId(herbId);
+            var recipeSection = document.getElementById('herb-recipe-section');
+            if (!recipeSection) return;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/recipes/herb/' + dbId, true);
+            xhr.timeout = 8000;
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        var apiRecipes = resp.data || [];
+                        if (apiRecipes.length > 0) {
+                            var html = '<div class="detail-section"><h3 class="detail-section-title title-font">食疗方法</h3><div class="recipe-carousel">';
+                            apiRecipes.forEach(function(r) {
+                                html += '<div class="recipe-card" onclick="viewRecipeDetail(' + r.id + ')">'
+                                    + '<div class="recipe-icon">🍲</div>'
+                                    + '<div class="recipe-name">' + escapeHtml(r.title) + '</div>'
+                                    + '<div class="recipe-desc">' + (r.efficacy ? escapeHtml(r.efficacy) : '点击查看食谱') + '</div>'
+                                    + '</div>';
+                            });
+                            html += '</div></div>';
+                            recipeSection.innerHTML = html;
+                        } else if (herb.recipes && herb.recipes.length > 0) {
+                            var fallbackHtml = '<div class="detail-section"><h3 class="detail-section-title title-font">食疗方法</h3><div class="recipe-carousel">';
+                            herb.recipes.forEach(function(r) {
+                                if (typeof r === 'object') {
+                                    if (r.published) {
+                                        fallbackHtml += '<div class="recipe-card coming-soon"><div class="recipe-icon">🍲</div><div class="recipe-name">' + escapeHtml(r.name) + '</div><div class="coming-soon-text">敬请期待</div></div>';
+                                    } else {
+                                        fallbackHtml += '<div class="recipe-card coming-soon"><div class="coming-soon-badge">敬请期待</div><div class="recipe-icon">🍲</div><div class="recipe-name">' + escapeHtml(r.name) + '</div><div class="coming-soon-text">敬请期待</div></div>';
+                                    }
+                                }
+                            });
+                            fallbackHtml += '</div></div>';
+                            recipeSection.innerHTML = fallbackHtml;
+                        } else {
+                            recipeSection.innerHTML = '';
+                        }
+                    } catch(e) {
+                        recipeSection.innerHTML = '';
+                    }
+                } else {
+                    recipeSection.innerHTML = '';
+                }
+            };
+            xhr.onerror = xhr.ontimeout = function() {
+                recipeSection.innerHTML = '';
+            };
+            xhr.send();
+        }
+
+        function viewRecipeDetail(recipeId) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/recipes/' + recipeId, true);
+            xhr.timeout = 8000;
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success && resp.data) {
+                            showRecipeModal(resp.data);
+                        } else {
+                            showCommentToast('食谱加载失败');
+                        }
+                    } catch(e) {
+                        showCommentToast('食谱加载失败');
+                    }
+                } else {
+                    showCommentToast('网络错误');
+                }
+            };
+            xhr.onerror = function() { showCommentToast('网络错误'); };
+            xhr.send();
+        }
+
+        function showRecipeModal(recipe) {
+            var modal = document.getElementById('recipe-detail-modal');
+            if (!modal) return;
+            var titleEl = modal.querySelector('.recipe-detail-modal-title');
+            var bodyEl = modal.querySelector('.recipe-detail-modal-body');
+            if (titleEl) titleEl.textContent = recipe.title;
+            if (bodyEl) {
+                var ingredients = [];
+                try { ingredients = JSON.parse(recipe.ingredients || '[]'); } catch(e) {}
+                var html = '';
+                html += '<div class="recipe-like-bar"><button class="like-btn" id="recipe-like-btn" onclick="toggleLike(\'recipe\',' + recipe.id + ',\'recipe-like-count\',\'recipe-like-btn\',\'recipe-like-icon\')"><span class="like-icon" id="recipe-like-icon">🤍</span><span class="like-count" id="recipe-like-count">0</span></button></div>';
+                if (ingredients.length > 0) {
+                    html += '<div class="recipe-detail-ingredients"><div class="recipe-detail-label">🥘 食材</div><ul>';
+                    ingredients.forEach(function(item) {
+                        html += '<li>' + escapeHtml(item) + '</li>';
+                    });
+                    html += '</ul></div>';
+                }
+                if (recipe.efficacy) {
+                    html += '<div class="recipe-detail-efficacy"><div class="recipe-detail-label">💪 功效</div><p>' + escapeHtml(recipe.efficacy) + '</p></div>';
+                }
+                if (recipe.content) {
+                    html += '<div class="recipe-detail-content"><div class="recipe-detail-label">📝 做法</div>' + recipe.content + '</div>';
+                }
+                if (recipe.creator_name) {
+                    html += '<div class="recipe-detail-author">上传者：' + escapeHtml(recipe.creator_name) + '</div>';
+                }
+                bodyEl.innerHTML = html;
+            }
+            modal.classList.add('visible');
+            loadLikeCount('recipe', recipe.id, 'recipe-like-count', 'recipe-like-btn', 'recipe-like-icon');
+        }
+
+        function closeRecipeModal() {
+            var modal = document.getElementById('recipe-detail-modal');
+            if (modal) modal.classList.remove('visible');
+        }
+
+        var fbPageType = '药材相关问题';
+        var fbPageScreenshotFile = null;
+
+        function navigateToFeedback() {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            currentState = { ...currentState, level: 'feedback', herbId: '', searchQuery: '', searchResults: null, searchLoading: false };
+            render();
+            setTimeout(function() { loadFbPageDraft(); }, 100);
+        }
+
+        function renderFeedbackPage() {
+            return `
+                <div class="top-nav">
+                    <div class="nav-header">
+                        <button class="back-btn" onclick="navigateBack()">←</button>
+                        <span class="page-title title-font">💬 问题反馈</span>
+                        <div class="nav-actions"></div>
+                    </div>
+                </div>
+                <div class="feedback-page" id="feedback-page-content">
+                    <div class="feedback-page-header">
+                        <div class="feedback-page-icon">💬</div>
+                        <div class="feedback-page-title title-font">问题反馈</div>
+                        <div class="feedback-page-desc">您的反馈对我们非常重要，帮助我们不断改进内容和功能</div>
+                    </div>
+                    <div class="feedback-form-card">
+                        <div class="fb-page-label">问题类型</div>
+                        <div class="fb-page-type-group" id="fb-page-type-group">
+                            <button class="fb-page-type-btn active" onclick="selectFbPageType('药材相关问题',this)">🌿 药材相关问题</button>
+                            <button class="fb-page-type-btn" onclick="selectFbPageType('内容说明不清晰',this)">📝 内容说明不清晰</button>
+                            <button class="fb-page-type-btn" onclick="selectFbPageType('内容错误',this)">❌ 内容错误</button>
+                            <button class="fb-page-type-btn" onclick="selectFbPageType('功能异常',this)">⚙️ 功能异常</button>
+                            <button class="fb-page-type-btn" onclick="selectFbPageType('内容建议',this)">💡 内容建议</button>
+                            <button class="fb-page-type-btn" onclick="selectFbPageType('其他问题',this)">📌 其他问题</button>
+                        </div>
+                    </div>
+                    <div class="feedback-form-card">
+                        <div class="fb-page-label">详细描述</div>
+                        <textarea class="fb-page-textarea" id="fb-page-content" placeholder="请详细描述您遇到的问题或建议..." maxlength="1000" oninput="handleFbPageInput()" onkeydown="handleFbPageKeydown(event)"></textarea>
+                        <div class="fb-page-char-row">
+                            <span class="fb-page-char-warn" id="fb-page-char-warn" style="display:none"></span>
+                            <span class="fb-page-char-count" id="fb-page-char-count">已输入0字/1000字</span>
+                        </div>
+                    </div>
+                    <div class="feedback-form-card">
+                        <div class="fb-page-label">截图上传 <span class="fb-page-hint">（选填）</span></div>
+                        <div class="fb-page-upload-area" id="fb-page-upload-area" onclick="document.getElementById('fb-page-screenshot').click()">
+                            <input type="file" id="fb-page-screenshot" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="handleFbPageScreenshot(this)">
+                            <div class="fb-page-upload-placeholder" id="fb-page-upload-placeholder">
+                                <div class="fb-page-upload-icon">📷</div>
+                                <div class="fb-page-upload-text">点击上传截图</div>
+                                <div class="fb-page-upload-hint">支持JPG/PNG/GIF/WebP，最大5MB</div>
+                            </div>
+                            <div class="fb-page-upload-preview" id="fb-page-upload-preview" style="display:none">
+                                <img id="fb-page-preview-img" src="" alt="预览">
+                                <button class="fb-page-remove-img" onclick="event.stopPropagation(); removeFbPageScreenshot()">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feedback-form-card">
+                        <div class="fb-page-label">联系方式 <span class="fb-page-hint">（选填，方便我们回复您）</span></div>
+                        <input class="fb-page-input" id="fb-page-contact" type="text" placeholder="手机号、邮箱或微信" maxlength="100">
+                    </div>
+                    <button class="fb-page-submit-btn" id="fb-page-submit-btn" onclick="submitFbPage()">提交反馈</button>
+                    <div class="fb-page-limit-hint">问题描述限1000字以内，简明扼要的描述有助于我们更快解决问题</div>
+                </div>`;
+        }
+
+        function selectFbPageType(type, el) {
+            fbPageType = type;
+            document.querySelectorAll('#fb-page-type-group .fb-page-type-btn').forEach(function(b) { b.classList.remove('active'); });
+            if (el) el.classList.add('active');
+        }
+
+        function updateFbPageCharCount() {
+            var content = document.getElementById('fb-page-content');
+            var charCount = document.getElementById('fb-page-char-count');
+            var charWarn = document.getElementById('fb-page-char-warn');
+            if (!content) return;
+            var len = content.value.length;
+            if (charCount) {
+                charCount.textContent = '已输入' + len + '字/1000字';
+                charCount.classList.remove('char-warn', 'char-error');
+            }
+            if (charWarn) charWarn.style.display = 'none';
+            content.classList.remove('warn-border', 'error-border');
+            if (len >= 1000) {
+                if (charCount) charCount.classList.add('char-error');
+                if (charWarn) { charWarn.textContent = '抱歉，问题描述不能超过1000字，请精简您的内容后再提交'; charWarn.style.display = 'inline'; }
+                content.classList.add('error-border');
+            } else if (len >= 900) {
+                if (charCount) charCount.classList.add('char-warn');
+                content.classList.add('warn-border');
+            }
+        }
+
+        function autoExpandFbPageTextarea() {
+            var el = document.getElementById('fb-page-content');
+            if (!el) return;
+            el.style.height = 'auto';
+            var newHeight = Math.min(el.scrollHeight, window.innerHeight * 0.5);
+            el.style.height = Math.max(newHeight, parseFloat(getComputedStyle(el).minHeight)) + 'px';
+        }
+
+        function handleFbPageInput() {
+            var content = document.getElementById('fb-page-content');
+            if (!content) return;
+            if (content.value.length > 1000) {
+                content.value = content.value.substring(0, 1000);
+            }
+            updateFbPageCharCount();
+            autoExpandFbPageTextarea();
+            saveFbPageDraft();
+        }
+
+        function handleFbPageKeydown(e) {
+            var content = document.getElementById('fb-page-content');
+            if (!content) return;
+            if (content.value.length >= 1000 && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                var selStart = content.selectionStart;
+                var selEnd = content.selectionEnd;
+                if (selEnd - selStart === 0) {
+                    e.preventDefault();
+                }
+            }
+        }
+
+        var fbPageDraftTimer = null;
+        function saveFbPageDraft() {
+            if (fbPageDraftTimer) clearTimeout(fbPageDraftTimer);
+            fbPageDraftTimer = setTimeout(function() {
+                var content = document.getElementById('fb-page-content');
+                var contact = document.getElementById('fb-page-contact');
+                if (!content) return;
+                try {
+                    var draft = {
+                        type: fbPageType,
+                        content: content.value,
+                        contact: contact ? contact.value : '',
+                        ts: Date.now()
+                    };
+                    localStorage.setItem('fb_page_draft', JSON.stringify(draft));
+                } catch(e) {}
+            }, 500);
+        }
+
+        function loadFbPageDraft() {
+            try {
+                var raw = localStorage.getItem('fb_page_draft');
+                if (!raw) return;
+                var draft = JSON.parse(raw);
+                if (Date.now() - draft.ts > 86400000) { localStorage.removeItem('fb_page_draft'); return; }
+                var content = document.getElementById('fb-page-content');
+                var contact = document.getElementById('fb-page-contact');
+                if (draft.type) {
+                    fbPageType = draft.type;
+                    document.querySelectorAll('#fb-page-type-group .fb-page-type-btn').forEach(function(b) {
+                        b.classList.toggle('active', b.textContent.indexOf(draft.type.replace(/[🌿📝❌⚙️💡📌]/g, '').trim()) > -1);
+                    });
+                }
+                if (content && draft.content) { content.value = draft.content; updateFbPageCharCount(); autoExpandFbPageTextarea(); }
+                if (contact && draft.contact) contact.value = draft.contact;
+            } catch(e) {}
+        }
+
+        function clearFbPageDraft() {
+            try { localStorage.removeItem('fb_page_draft'); } catch(e) {}
+        }
+
+        function handleFbPageScreenshot(input) {
+            if (!input.files || !input.files[0]) return;
+            var file = input.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                showCommentToast('图片大小不能超过5MB');
+                input.value = '';
+                return;
+            }
+            var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (allowedTypes.indexOf(file.type) === -1) {
+                showCommentToast('仅支持 JPG、PNG、GIF、WebP 格式');
+                input.value = '';
+                return;
+            }
+            fbPageScreenshotFile = file;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var previewImg = document.getElementById('fb-page-preview-img');
+                var placeholder = document.getElementById('fb-page-upload-placeholder');
+                var preview = document.getElementById('fb-page-upload-preview');
+                if (previewImg) previewImg.src = e.target.result;
+                if (placeholder) placeholder.style.display = 'none';
+                if (preview) preview.style.display = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeFbPageScreenshot() {
+            fbPageScreenshotFile = null;
+            var fileInput = document.getElementById('fb-page-screenshot');
+            var placeholder = document.getElementById('fb-page-upload-placeholder');
+            var preview = document.getElementById('fb-page-upload-preview');
+            var previewImg = document.getElementById('fb-page-preview-img');
+            if (fileInput) fileInput.value = '';
+            if (placeholder) placeholder.style.display = '';
+            if (preview) preview.style.display = 'none';
+            if (previewImg) previewImg.src = '';
+        }
+
+        function submitFbPage() {
+            var content = document.getElementById('fb-page-content');
+            var contact = document.getElementById('fb-page-contact');
+            var btn = document.getElementById('fb-page-submit-btn');
+            if (!content || !content.value.trim()) {
+                showCommentToast('请输入反馈内容');
+                return;
+            }
+            if (content.value.length > 1000) {
+                showCommentToast('问题描述不能超过1000字，请精简内容');
+                return;
+            }
+            if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
+
+            var formData = new FormData();
+            formData.append('type', fbPageType);
+            formData.append('content', content.value.trim());
+            if (contact && contact.value.trim()) {
+                formData.append('contact', contact.value.trim());
+            }
+            if (fbPageScreenshotFile) {
+                formData.append('screenshot', fbPageScreenshotFile);
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/feedback', true);
+            xhr.onload = function() {
+                if (btn) { btn.disabled = false; btn.textContent = '提交反馈'; }
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success) {
+                            showFbPageSuccess();
+                        } else {
+                            showCommentToast(resp.message || '提交失败');
+                        }
+                    } catch(e) { showCommentToast('提交失败'); }
+                } else { showCommentToast('网络错误'); }
+            };
+            xhr.onerror = function() {
+                if (btn) { btn.disabled = false; btn.textContent = '提交反馈'; }
+                showCommentToast('网络错误');
+            };
+            xhr.send(formData);
+        }
+
+        function showFbPageSuccess() {
+            clearFbPageDraft();
+            var page = document.getElementById('feedback-page-content');
+            if (page) {
+                page.innerHTML = '<div class="fb-page-success">'
+                    + '<div class="fb-page-success-icon">✅</div>'
+                    + '<div class="fb-page-success-title">反馈提交成功</div>'
+                    + '<div class="fb-page-success-desc">感谢您的反馈！我们会认真查看并尽快处理。<br>您的建议将帮助我们不断改进内容和功能。</div>'
+                    + '<button class="fb-page-success-back" onclick="navigateToNational()">返回首页</button>'
+                    + '</div>';
+            }
+        }
+
+        var commentPage = 1;
+        var commentPageSize = 20;
+        var commentTotal = 0;
+        var commentTotalPages = 1;
+        var commentLoading = false;
+
+        function loadComments(herbId, page) {
+            currentCommentHerbId = herbId;
+            commentPage = page || 1;
+            var dbId = getDbIdByFrontendId(herbId);
+            var container = document.getElementById('comment-list-container');
+            if (!container) return;
+            if (commentPage === 1) {
+                container.innerHTML = '<div class="comment-loading">加载评论中...</div>';
+            }
+
+            if (commentLoading) return;
+            commentLoading = true;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/comments/' + dbId + '?page=' + commentPage + '&pageSize=' + commentPageSize, true);
+            xhr.timeout = 10000;
+            xhr.onload = function() {
+                commentLoading = false;
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success) {
+                            commentTotal = resp.total || 0;
+                            commentTotalPages = resp.totalPages || Math.ceil(commentTotal / commentPageSize);
+                            renderComments(resp.data || [], resp.total || 0);
+                        } else {
+                            if (commentPage === 1) {
+                                container.innerHTML = '<div class="comment-empty"><div class="comment-empty-icon">💬</div><div class="comment-empty-text">快来抢沙发</div><div class="comment-empty-sub">成为第一个评论的人吧</div></div>';
+                            }
+                        }
+                    } catch(e) {
+                        if (commentPage === 1) {
+                            container.innerHTML = '<div class="comment-empty"><div class="comment-empty-icon">💬</div><div class="comment-empty-text">快来抢沙发</div><div class="comment-empty-sub">成为第一个评论的人吧</div></div>';
+                        }
+                    }
+                } else {
+                    if (commentPage === 1) {
+                        container.innerHTML = '<div class="comment-empty"><div class="comment-empty-icon">💬</div><div class="comment-empty-text">快来抢沙发</div><div class="comment-empty-sub">成为第一个评论的人吧</div></div>';
+                    }
+                }
+            };
+            xhr.onerror = xhr.ontimeout = function() {
+                commentLoading = false;
+                if (commentPage === 1) {
+                    container.innerHTML = '<div class="comment-empty"><div class="comment-empty-icon">💬</div><div class="comment-empty-text">快来抢沙发</div><div class="comment-empty-sub">成为第一个评论的人吧</div></div>';
+                }
+            };
+            xhr.send();
+        }
+
+        function renderComments(comments, total) {
+            var container = document.getElementById('comment-list-container');
+            var countEl = document.getElementById('comment-count');
+            if (!container) return;
+            if (countEl) countEl.textContent = total;
+
+            if (total === 0 && comments.length === 0) {
+                container.innerHTML = '<div class="comment-empty"><div class="comment-empty-icon">💬</div><div class="comment-empty-text">快来抢沙发</div><div class="comment-empty-sub">成为第一个评论的人吧</div></div>';
+                return;
+            }
+
+            var html = '<div class="comment-list">';
+            comments.forEach(function(c) {
+                var timeStr = formatCommentTime(c.created_at);
+                html += '<div class="comment-item">'
+                    + '<div class="comment-header">'
+                    + '<span class="comment-nickname">' + escapeHtml(c.nickname) + '</span>'
+                    + '<span class="comment-time">' + timeStr + '</span>'
+                    + '</div>'
+                    + '<div class="comment-content">' + escapeHtml(c.content) + '</div>'
+                    + '</div>';
+            });
+            html += '</div>';
+
+            if (commentTotalPages > 1) {
+                html += '<div class="comment-pagination">';
+                html += '<button class="comment-page-btn" onclick="loadComments(\'' + currentCommentHerbId + '\', 1)" ' + (commentPage <= 1 ? 'disabled' : '') + '>首页</button>';
+                html += '<button class="comment-page-btn" onclick="loadComments(\'' + currentCommentHerbId + '\', ' + (commentPage - 1) + ')" ' + (commentPage <= 1 ? 'disabled' : '') + '>上一页</button>';
+                html += '<span class="comment-page-info">' + commentPage + ' / ' + commentTotalPages + '</span>';
+                html += '<button class="comment-page-btn" onclick="loadComments(\'' + currentCommentHerbId + '\', ' + (commentPage + 1) + ')" ' + (commentPage >= commentTotalPages ? 'disabled' : '') + '>下一页</button>';
+                html += '<button class="comment-page-btn" onclick="loadComments(\'' + currentCommentHerbId + '\', ' + commentTotalPages + ')" ' + (commentPage >= commentTotalPages ? 'disabled' : '') + '>末页</button>';
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function formatCommentTime(dateStr) {
+            if (!dateStr) return '';
+            try {
+                var d = new Date(dateStr + 'Z');
+                if (isNaN(d.getTime())) d = new Date(dateStr);
+                var now = new Date();
+                var diff = Math.floor((now - d) / 1000);
+                if (diff < 60) return '刚刚';
+                if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+                if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+                if (diff < 604800) return Math.floor(diff / 86400) + '天前';
+                var m = d.getMonth() + 1;
+                var day = d.getDate();
+                return m + '月' + day + '日';
+            } catch(e) {
+                return dateStr;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function submitComment(herbId) {
+            var dbId = getDbIdByFrontendId(herbId);
+            var nicknameEl = document.getElementById('comment-nickname');
+            var contentEl = document.getElementById('comment-content');
+            var btnEl = document.getElementById('comment-submit-btn');
+            if (!nicknameEl || !contentEl || !btnEl) return;
+
+            var nickname = nicknameEl.value.trim();
+            var content = contentEl.value.trim();
+
+            if (!nickname) {
+                showCommentToast('请输入昵称');
+                nicknameEl.focus();
+                return;
+            }
+            if (!content) {
+                showCommentToast('请输入评论内容');
+                contentEl.focus();
+                return;
+            }
+            if (nickname.length > 20) {
+                showCommentToast('昵称不能超过20个字符');
+                return;
+            }
+            if (content.length > 500) {
+                showCommentToast('评论内容不能超过500个字符');
+                return;
+            }
+
+            btnEl.classList.add('loading');
+            btnEl.textContent = '提交中...';
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/comments', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.timeout = 15000;
+            xhr.onload = function() {
+                btnEl.classList.remove('loading');
+                btnEl.textContent = '发表评论';
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.success) {
+                            contentEl.value = '';
+                            var charCount = document.getElementById('comment-char-count');
+                            if (charCount) {
+                                charCount.textContent = '0/500';
+                                charCount.classList.remove('char-warn', 'char-error');
+                            }
+                            showCommentToast('评论发表成功！');
+                            loadComments(herbId, 1);
+                        } else {
+                            showCommentToast(resp.message || '评论提交失败');
+                        }
+                    } catch(e) {
+                        showCommentToast('评论提交失败');
+                    }
+                } else {
+                    showCommentToast('网络错误，请重试');
+                }
+            };
+            xhr.onerror = xhr.ontimeout = function() {
+                btnEl.classList.remove('loading');
+                btnEl.textContent = '发表评论';
+                showCommentToast('网络超时，请重试');
+            };
+            xhr.send(JSON.stringify({ herb_id: dbId, nickname: nickname, content: content }));
+        }
+
+        function showCommentToast(msg) {
+            var existing = document.querySelector('.comment-toast');
+            if (existing) existing.remove();
+            var toast = document.createElement('div');
+            toast.className = 'comment-toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.classList.add('visible'); }, 10);
+            setTimeout(function() {
+                toast.classList.remove('visible');
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 2000);
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            let content = '';
+            switch (currentState.level) {
+                case 'national': content = renderNationalMap(); break;
+                case 'provincial': content = renderProvincialMap(); break;
+                case 'city': content = renderCityHerbs(); break;
+                case 'detail': content = renderHerbDetail(); break;
+                case 'search': content = renderNationalMap(); break;
+                case 'recipes': content = renderAllRecipes(); break;
+                case 'feedback': content = renderFeedbackPage(); break;
+            }
+            app.innerHTML = content;
+            if (currentState.level !== 'detail') {
+                app.querySelector('.top-nav, .herb-detail-header')?.parentElement?.classList.add('page-transition');
+            }
+            window.scrollTo(0, 0);
+
+            if (currentState.level === 'national' && currentState.level !== 'search') {
+                setTimeout(() => initChinaMap(), 100);
+            } else if (currentState.level === 'provincial' && currentState.level !== 'search') {
+                setTimeout(() => initGuangdongMap(), 100);
+            } else if (currentState.level === 'detail' && currentState.herbId) {
+                var allHerbs = [];
+                Object.values(herbData.cities).forEach(function(list) { allHerbs = allHerbs.concat(list); });
+                var currentHerb = allHerbs.find(function(h) { return h.id === currentState.herbId; });
+                setTimeout(function() {
+                    trackPageView('herb', currentState.herbId);
+                    loadLikeCount('herb', currentState.herbId);
+                    loadHerbDbImage(currentState.herbId);
+                    loadHerbGallery(currentState.herbId);
+                    loadHerbRecipes(currentState.herbId, currentHerb || {});
+                    loadHerbVideos(currentState.herbId, currentHerb || {});
+                    loadComments(currentState.herbId);
+                }, 200);
+            }
+        }
+
+        function navigateToNational() {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            currentState = { ...currentState, level: 'national', province: '', city: '', herbId: '', searchQuery: '', searchResults: null, searchLoading: false };
+            render();
+        }
+
+        function navigateToRecipes() {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            currentState = { ...currentState, level: 'recipes', herbId: '', searchQuery: '', searchResults: null, searchLoading: false };
+            render();
+            loadAllRecipes();
+        }
+
+        var allRecipesCache = [];
+        var recipeFilterKeyword = '';
+        var recipeSortBy = 'updated_at';
+
+        function renderAllRecipes() {
+            return `
+                <div class="top-nav">
+                    <div class="nav-header">
+                        <button class="back-btn" onclick="navigateBack()">←</button>
+                        <span class="page-title title-font">🍲 食谱大全</span>
+                        <div class="nav-actions"></div>
+                    </div>
+                </div>
+                <div class="all-recipes-section">
+                    <div class="recipe-filter-bar">
+                        <button class="recipe-filter-btn active" onclick="filterRecipes('', this)">全部</button>
+                        <button class="recipe-filter-btn" onclick="filterRecipes('汤', this)">🍲 汤类</button>
+                        <button class="recipe-filter-btn" onclick="filterRecipes('茶', this)">🍵 茶饮</button>
+                        <button class="recipe-filter-btn" onclick="filterRecipes('粥', this)">🥣 粥类</button>
+                        <button class="recipe-filter-btn" onclick="filterRecipes('其他', this)">🍽️ 其他</button>
+                        <select class="recipe-sort-select" onchange="sortRecipes(this.value)">
+                            <option value="updated_at">最新更新</option>
+                            <option value="title">按名称</option>
+                        </select>
+                    </div>
+                    <div class="recipe-list" id="recipe-list-container">
+                        <div class="recipe-list-empty">加载食谱中...</div>
+                    </div>
+                </div>`;
+        }
+
+        function loadAllRecipes() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/recipes?published=true', true);
+            xhr.timeout = 8000;
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        allRecipesCache = resp.data || [];
+                        loadRecipeLikeCounts();
+                    } catch(e) {
+                        allRecipesCache = [];
+                        displayFilteredRecipes();
+                    }
+                } else {
+                    allRecipesCache = [];
+                    displayFilteredRecipes();
+                }
+            };
+            xhr.onerror = xhr.ontimeout = function() {
+                allRecipesCache = [];
+                displayFilteredRecipes();
+            };
+            xhr.send();
+        }
+
+        function loadRecipeLikeCounts() {
+            var ids = allRecipesCache.map(function(r) { return r.id; }).filter(Boolean);
+            if (ids.length === 0) { displayFilteredRecipes(); return; }
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/likes/batch/recipe?ids=' + ids.join(','), true);
+            xhr.timeout = 5000;
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        var counts = resp.data || {};
+                        allRecipesCache.forEach(function(r) {
+                            r._likeCount = counts[r.id] || 0;
+                        });
+                    } catch(e) {}
+                }
+                displayFilteredRecipes();
+            };
+            xhr.onerror = xhr.ontimeout = function() { displayFilteredRecipes(); };
+            xhr.send();
+        }
+
+        function filterRecipes(keyword, btn) {
+            recipeFilterKeyword = keyword;
+            document.querySelectorAll('.recipe-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+            if (btn) btn.classList.add('active');
+            displayFilteredRecipes();
+        }
+
+        function sortRecipes(sortBy) {
+            recipeSortBy = sortBy;
+            displayFilteredRecipes();
+        }
+
+        function displayFilteredRecipes() {
+            var container = document.getElementById('recipe-list-container');
+            if (!container) return;
+
+            var filtered = allRecipesCache.slice();
+
+            if (recipeFilterKeyword) {
+                if (recipeFilterKeyword === '其他') {
+                    filtered = filtered.filter(function(r) {
+                        var t = r.title || '';
+                        return t.indexOf('汤') === -1 && t.indexOf('茶') === -1 && t.indexOf('粥') === -1;
+                    });
+                } else {
+                    filtered = filtered.filter(function(r) {
+                        return (r.title || '').indexOf(recipeFilterKeyword) > -1;
+                    });
+                }
+            }
+
+            if (recipeSortBy === 'title') {
+                filtered.sort(function(a, b) { return (a.title || '').localeCompare(b.title || ''); });
+            } else {
+                filtered.sort(function(a, b) { return (b.updated_at || '').localeCompare(a.updated_at || ''); });
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="recipe-list-empty">暂无食谱数据</div>';
+                return;
+            }
+
+            var html = '';
+            filtered.forEach(function(r) {
+                var ingredients = [];
+                try { ingredients = JSON.parse(r.ingredients || '[]'); } catch(e) {}
+                html += '<div class="recipe-list-card" onclick="viewRecipeDetail(' + r.id + ')">'
+                    + '<div class="recipe-list-card-title">🍲 ' + escapeHtml(r.title) + '</div>'
+                    + (r.efficacy ? '<div class="recipe-list-card-efficacy">💪 ' + escapeHtml(r.efficacy) + '</div>' : '')
+                    + '<div class="recipe-list-card-meta">'
+                    + (ingredients.length > 0 ? '<span>🥘 ' + ingredients.length + '种食材</span>' : '')
+                    + (r.creator_name ? '<span>👤 ' + escapeHtml(r.creator_name) + '</span>' : '')
+                    + '<span>🤍 ' + (r._likeCount || 0) + '</span>'
+                    + '</div></div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function navigateToProvince(province) {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            currentState = { ...currentState, level: 'provincial', province: province, searchQuery: '', searchResults: null, searchLoading: false };
+            render();
+        }
+
+        function navigateToCity(city) {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            var herbs = herbData.cities[city] || [];
+            preloadStaticImages(herbs.map(function(h) { return h.id; }));
+            currentState = { ...currentState, level: 'city', city: city, searchQuery: '', searchResults: null, searchLoading: false };
+            render();
+        }
+
+        function navigateToDetail(herbId) {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            preloadStaticImages([herbId]);
+            currentState = { ...currentState, level: 'detail', herbId: herbId, searchQuery: '', searchResults: null, searchLoading: false };
+            render();
+        }
+
+        function navigateBack() {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            switch (currentState.level) {
+                case 'provincial': navigateToNational(); break;
+                case 'city': currentState.level = 'provincial'; render(); break;
+                case 'detail': currentState.level = 'city'; currentState.herbId = ''; render(); break;
+                case 'search': currentState.level = 'national'; currentState.searchQuery = ''; currentState.searchResults = null; render(); break;
+                case 'recipes': navigateToNational(); break;
+                case 'feedback': navigateToNational(); break;
+            }
+        }
+
+        function viewRecipe(name, event) {
+            showCommentToast('食谱详情加载中...');
+        }
+
+        function playVideo(name, event) {
+            if (event) {
+                var x = event.clientX;
+                var y = event.clientY;
+                showComingSoonToast(name, x, y);
+            } else {
+                showComingSoonToast(name, window.innerWidth / 2, window.innerHeight / 2);
+            }
+        }
+
+        function toggleFavorite(herbId, btn) {
+            const index = currentState.favoriteHerbs.indexOf(herbId);
+            if (index > -1) { currentState.favoriteHerbs.splice(index, 1); btn.classList.remove('active'); btn.innerHTML = '♡'; }
+            else { currentState.favoriteHerbs.push(herbId); btn.classList.add('active'); btn.innerHTML = '♥'; }
+        }
+
+        preloadHerbImages();
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON MAP · 科技风格地图应用</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-cyan: #00ffcc;
+            --neon-purple: #a855f7;
+            --neon-pink: #ff006e;
+            --neon-green: #39ff14;
+            --dark-bg: #0a0e17;
+            --dark-card: rgba(15, 23, 42, 0.9);
+            --dark-border: rgba(0, 212, 255, 0.3);
+            --grid-color: rgba(0, 212, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--dark-bg);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .tech-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .app-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
+        .data-particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+            animation: float 8s infinite ease-in-out;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.6; }
+            25% { transform: translateY(-30px) translateX(20px); opacity: 1; }
+            50% { transform: translateY(-10px) translateX(-10px); opacity: 0.4; }
+            75% { transform: translateY(-40px) translateX(10px); opacity: 0.8; }
+        }
+
+        .map-container {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: 
+                radial-gradient(ellipse at 30% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+                linear-gradient(180deg, #0a0e17 0%, #0d1525 50%, #0a0e17 100%);
+        }
+
+        .map-svg-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-svg {
+            max-width: 90%;
+            max-height: 80%;
+        }
+
+        .map-region {
+            fill: rgba(30, 41, 59, 0.8);
+            stroke: var(--neon-blue);
+            stroke-width: 1;
+            filter: drop-shadow(0 0 5px rgba(0, 212, 255, 0.3));
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .map-region:hover {
+            fill: rgba(0, 212, 255, 0.2);
+            stroke: var(--neon-cyan);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 15px rgba(0, 255, 204, 0.5));
+        }
+
+        .neon-road {
+            fill: none;
+            stroke: var(--neon-blue);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 3px var(--neon-blue));
+        }
+
+        .neon-path {
+            fill: none;
+            stroke: var(--neon-purple);
+            stroke-width: 3;
+            stroke-linecap: round;
+            animation: pathGlow 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 8px var(--neon-purple));
+        }
+
+        @keyframes pathGlow {
+            0%, 100% { 
+                stroke-opacity: 1; 
+                filter: drop-shadow(0 0 8px var(--neon-purple));
+            }
+            50% { 
+                stroke-opacity: 0.7; 
+                filter: drop-shadow(0 0 20px var(--neon-purple)) drop-shadow(0 0 30px var(--neon-pink));
+            }
+        }
+
+        .path-animate {
+            stroke-dasharray: 10, 5;
+            animation: dashMove 1s linear infinite;
+        }
+
+        @keyframes dashMove {
+            to { stroke-dashoffset: -15; }
+        }
+
+        .poi-marker {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .poi-marker:hover {
+            transform: scale(1.2);
+        }
+
+        .poi-icon-bg {
+            animation: poiPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes poiPulse {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px currentColor);
+                opacity: 1;
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 0 25px currentColor);
+                opacity: 0.8;
+            }
+        }
+
+        .location-pulse {
+            animation: locationPulse 1.5s ease-out infinite;
+        }
+
+        @keyframes locationPulse {
+            0% { 
+                r: 8; 
+                opacity: 1; 
+            }
+            100% { 
+                r: 25; 
+                opacity: 0; 
+            }
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 15px 20px;
+            background: linear-gradient(180deg, rgba(10, 14, 23, 0.95) 0%, rgba(10, 14, 23, 0.8) 70%, transparent 100%);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .search-box {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--dark-border);
+            border-radius: 25px;
+            padding: 12px 20px 12px 50px;
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2), inset 0 0 20px rgba(0, 255, 204, 0.05);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--neon-blue);
+            font-size: 18px;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            backdrop-filter: blur(20px);
+        }
+
+        .search-results.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .result-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .result-info .result-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .result-info .result-desc {
+            font-size: 12px;
+            color: var(--neon-blue);
+            opacity: 0.7;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            padding: 6px 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .left-panel {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-panel {
+            background: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            border-radius: 16px;
+            padding: 8px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(168, 85, 247, 0.3));
+            color: var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
+        }
+
+        .control-divider {
+            width: 100%;
+            height: 1px;
+            background: var(--dark-border);
+            margin: 4px 0;
+        }
+
+        .scale-display {
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            color: var(--neon-blue);
+            padding: 8px 4px;
+            opacity: 0.8;
+        }
+
+        .right-panel {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .layer-panel {
+            background: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            border-radius: 16px;
+            padding: 12px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 180px;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: var(--neon-blue);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .layer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .layer-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .layer-option:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .layer-option.active {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.2), transparent);
+            border-left: 2px solid var(--neon-cyan);
+        }
+
+        .layer-radio {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 212, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .layer-option.active .layer-radio::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+            box-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .legend-panel {
+            background: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            border-radius: 16px;
+            padding: 12px;
+            backdrop-filter: blur(20px);
+            width: 180px;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 15px 20px;
+            background: linear-gradient(0deg, rgba(10, 14, 23, 0.95) 0%, rgba(10, 14, 23, 0.8) 70%, transparent 100%);
+        }
+
+        .bottom-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .coords-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--neon-cyan);
+            letter-spacing: 1px;
+        }
+
+        .coords-value {
+            background: rgba(0, 255, 204, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin: 0 5px;
+            border: 1px solid rgba(0, 255, 204, 0.2);
+        }
+
+        .poi-summary {
+            display: flex;
+            gap: 20px;
+        }
+
+        .poi-count {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .poi-count-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .info-popup {
+            position: absolute;
+            background: var(--dark-card);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 220px;
+            z-index: 150;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+            animation: popupIn 0.3s ease;
+            display: none;
+        }
+
+        .info-popup.active {
+            display: block;
+        }
+
+        @keyframes popupIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .popup-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .popup-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .popup-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .popup-subtitle {
+            font-size: 11px;
+            color: var(--neon-blue);
+            opacity: 0.7;
+        }
+
+        .popup-content {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .popup-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .popup-meta-item {
+            font-size: 11px;
+            color: var(--neon-cyan);
+        }
+
+        .popup-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .popup-close:hover {
+            background: rgba(255, 0, 110, 0.2);
+            color: var(--neon-pink);
+        }
+
+        @media (max-width: 768px) {
+            .top-bar {
+                padding: 10px 15px;
+            }
+            
+            .header-content {
+                flex-wrap: wrap;
+            }
+            
+            .logo-text {
+                display: none;
+            }
+            
+            .search-container {
+                order: 3;
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .status-bar {
+                display: none;
+            }
+            
+            .left-panel, .right-panel {
+                display: none;
+            }
+            
+            .poi-summary {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="grid-overlay"></div>
+        
+        <div class="data-particles" id="particles"></div>
+
+        <div class="map-container">
+            <div class="map-svg-container">
+                <svg class="map-svg" viewBox="0 0 800 600">
+                    <defs>
+                        <linearGradient id="roadGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#00ffcc;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <path class="map-region" d="M150,150 Q200,120 280,130 L350,145 Q400,160 450,150 L520,165 Q580,180 600,220 L610,280 Q600,340 570,380 L530,410 Q480,440 420,450 L350,455 Q280,460 220,440 L160,410 Q100,370 80,300 L90,230 Q100,180 150,150 Z" />
+                    
+                    <path class="neon-road" d="M100,300 Q200,280 300,320 Q400,360 500,300 Q550,260 580,280" />
+                    <path class="neon-road" d="M200,180 Q300,220 400,200 Q500,180 550,220" />
+                    <path class="neon-road" d="M300,150 Q350,250 380,350 Q400,420 420,450" />
+                    
+                    <path class="neon-path path-animate" d="M120,280 C180,260 240,300 320,280 S440,240 520,260" />
+                    <path class="neon-path" d="M200,350 C280,380 360,400 440,380 S560,320 580,340" style="stroke: #00ffcc; animation-delay: 0.5s;" />
+
+                    <circle cx="120" cy="280" r="8" fill="#0a0e17" stroke="#a855f7" stroke-width="2" filter="url(#glow)" />
+                    <circle cx="120" cy="280" r="8" fill="none" stroke="#a855f7" class="location-pulse" />
+                    <circle cx="120" cy="280" r="8" fill="none" stroke="#a855f7" class="location-pulse" style="animation-delay: 0.5s;" />
+                    <text x="120" y="310" text-anchor="middle" fill="#a855f7" font-size="10" class="tech-font">CURRENT</text>
+
+                    <g class="poi-marker" onclick="showPOIInfo(event, '医院', 'Medical Center', '三级甲等医院 · 24小时急诊', 1.2, '#00d4ff')">
+                        <circle class="poi-icon-bg" cx="520" cy="260" r="14" fill="rgba(0,212,255,0.3)" stroke="#00d4ff" stroke-width="2" style="color: #00d4ff;" />
+                        <text x="520" y="265" text-anchor="middle" fill="#00d4ff" font-size="14">🏥</text>
+                    </g>
+
+                    <g class="poi-marker" onclick="showPOIInfo(event, '交通枢纽', 'Transport Hub', '高铁站 · 机场大巴 · 地铁换乘', 0.8, '#00ffcc')">
+                        <circle class="poi-icon-bg" cx="320" cy="200" r="14" fill="rgba(0,255,204,0.3)" stroke="#00ffcc" stroke-width="2" style="color: #00ffcc;" />
+                        <text x="320" y="205" text-anchor="middle" fill="#00ffcc" font-size="14">🚄</text>
+                    </g>
+
+                    <g class="poi-marker" onclick="showPOIInfo(event, '购物中心', 'Shopping Mall', '综合商业体 · 200+品牌 · IMAX影院', 2.5, '#ff006e')">
+                        <circle class="poi-icon-bg" cx="440" cy="380" r="14" fill="rgba(255,0,110,0.3)" stroke="#ff006e" stroke-width="2" style="color: #ff006e;" />
+                        <text x="440" y="385" text-anchor="middle" fill="#ff006e" font-size="14">🛒</text>
+                    </g>
+
+                    <g class="poi-marker" onclick="showPOIInfo(event, '科技园区', 'Tech Park', '国家级产业园 · 500+企业 · 孵化器', 3.1, '#a855f7')">
+                        <circle class="poi-icon-bg" cx="560" cy="340" r="14" fill="rgba(168,85,247,0.3)" stroke="#a855f7" stroke-width="2" style="color: #a855f7;" />
+                        <text x="560" y="345" text-anchor="middle" fill="#a855f7" font-size="14">🏢</text>
+                    </g>
+
+                    <g class="poi-marker" onclick="showPOIInfo(event, '教育机构', 'University', '双一流高校 · 国家级重点实验室', 1.8, '#39ff14')">
+                        <circle class="poi-icon-bg" cx="200" cy="350" r="14" fill="rgba(57,255,20,0.3)" stroke="#39ff14" stroke-width="2" style="color: #39ff14;" />
+                        <text x="200" y="355" text-anchor="middle" fill="#39ff14" font-size="14">🎓</text>
+                    </g>
+
+                    <g class="poi-marker" onclick="showPOIInfo(event, '酒店', 'Luxury Hotel', '五星级酒店 · 总统套房 · 米其林餐厅', 4.6, '#ffd700')">
+                        <circle class="poi-icon-bg" cx="580" cy="220" r="14" fill="rgba(255,215,0,0.3)" stroke="#ffd700" stroke-width="2" style="color: #ffd700;" />
+                        <text x="580" y="225" text-anchor="middle" fill="#ffd700" font-size="14">🏨</text>
+                    </g>
+
+                </svg>
+            </div>
+        </div>
+
+        <div class="top-bar">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🗺️</div>
+                    <span class="logo-text">NEON MAP</span>
+                </div>
+                
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-box" placeholder="搜索地点、地址、POI兴趣点..." id="searchInput" oninput="handleSearch(this.value)" onfocus="toggleResults(true)">
+                    <div class="search-results" id="searchResults">
+                        <div class="search-result-item" onclick="selectResult('科技园区')">
+                            <div class="result-icon" style="background: rgba(168,85,247,0.2);">🏢</div>
+                            <div class="result-info">
+                                <div class="result-title">科技园区</div>
+                                <div class="result-desc">距离当前位置 3.1km</div>
+                            </div>
+                        </div>
+                        <div class="search-result-item" onclick="selectResult('购物中心')">
+                            <div class="result-icon" style="background: rgba(255,0,110,0.2);">🛒</div>
+                            <div class="result-info">
+                                <div class="result-title">购物中心</div>
+                                <div class="result-desc">距离当前位置 2.5km</div>
+                            </div>
+                        </div>
+                        <div class="search-result-item" onclick="selectResult('交通枢纽')">
+                            <div class="result-icon" style="background: rgba(0,255,204,0.2);">🚄</div>
+                            <div class="result-info">
+                                <div class="result-title">交通枢纽</div>
+                                <div class="result-desc">距离当前位置 0.8km</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-bar">
+                    <div class="status-item">
+                        <span class="status-dot"></span>
+                        <span>GPS 在线</span>
+                    </div>
+                    <div class="status-item">
+                        <span style="color: var(--neon-cyan);">📡</span>
+                        <span>5G 100Mbps</span>
+                    </div>
+                    <div class="status-item">
+                        <span style="color: var(--neon-green);">🔋</span>
+                        <span>87%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="left-panel">
+            <div class="control-panel">
+                <button class="control-btn" onclick="zoomIn()">+</button>
+                <div class="control-divider"></div>
+                <button class="control-btn" onclick="zoomOut()">−</button>
+                <div class="control-divider"></div>
+                <button class="control-btn active" onclick="centerLocation()">⌖</button>
+                <div class="control-divider"></div>
+                <button class="control-btn" onclick="rotateMap()">↻</button>
+            </div>
+            <div class="control-panel">
+                <div class="scale-display">
+                    SCALE<br><span id="scaleValue">1: 5000</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="layer-panel">
+                <div class="panel-title">Map Layer</div>
+                <div class="layer-options">
+                    <div class="layer-option active" onclick="changeLayer(this, 'standard')">
+                        <div class="layer-radio"></div>
+                        <span>标准视图</span>
+                    </div>
+                    <div class="layer-option" onclick="changeLayer(this, 'satellite')">
+                        <div class="layer-radio"></div>
+                        <span>卫星视图</span>
+                    </div>
+                    <div class="layer-option" onclick="changeLayer(this, 'terrain')">
+                        <div class="layer-radio"></div>
+                        <span>地形视图</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="legend-panel">
+                <div class="panel-title">Legend</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-icon" style="color: #a855f7;">⌖</div>
+                        <span>实时定位</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(90deg, #00d4ff, #a855f7);"></div>
+                        <span>规划路径</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00d4ff;"></div>
+                        <span>主干道</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon">🏥</div>
+                        <span>医疗机构</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon">🚄</div>
+                        <span>交通枢纽</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="bottom-content">
+                <div class="coords-display">
+                    COORD: 
+                    <span class="coords-value" id="latValue">39.9042° N</span>
+                    <span class="coords-value" id="lngValue">116.4074° E</span>
+                </div>
+                <div class="poi-summary">
+                    <div class="poi-count">
+                        <span class="poi-count-value" style="color: #00d4ff;">23</span>
+                        <span>设施</span>
+                    </div>
+                    <div class="poi-count">
+                        <span class="poi-count-value" style="color: #00ffcc;">12</span>
+                        <span>交通</span>
+                    </div>
+                    <div class="poi-count">
+                        <span class="poi-count-value" style="color: #a855f7;">8</span>
+                        <span>企业</span>
+                    </div>
+                    <div class="poi-count">
+                        <span class="poi-count-value" style="color: #ff006e;">47</span>
+                        <span>服务</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-popup" id="infoPopup">
+            <button class="popup-close" onclick="closePopup()">×</button>
+            <div class="popup-header">
+                <div class="popup-icon" id="popupIcon">🏢</div>
+                <div>
+                    <div class="popup-title" id="popupTitle">科技园区</div>
+                    <div class="popup-subtitle" id="popupSubtitle">国家级产业园</div>
+                </div>
+            </div>
+            <div class="popup-content" id="popupContent">
+                这里是详细描述内容...
+            </div>
+            <div class="popup-meta">
+                <div class="popup-meta-item">📍 距离: <span id="popupDistance">3.1km</span></div>
+                <div class="popup-meta-item">🕐 更新: 刚刚</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const colors = ['#00d4ff', '#00ffcc', '#a855f7', '#ff006e'];
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particle.style.animationDuration = (5 + Math.random() * 5) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        let scaleIndex = 2;
+        const scales = ['1: 20000', '1: 10000', '1: 5000', '1: 2000', '1: 1000', '1: 500'];
+
+        function zoomIn() {
+            if (scaleIndex < scales.length - 1) {
+                scaleIndex++;
+                updateScale();
+            }
+        }
+
+        function zoomOut() {
+            if (scaleIndex > 0) {
+                scaleIndex--;
+                updateScale();
+            }
+        }
+
+        function updateScale() {
+            document.getElementById('scaleValue').textContent = scales[scaleIndex];
+        }
+
+        function centerLocation() {
+            const btns = document.querySelectorAll('.control-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const pulse = document.querySelectorAll('.location-pulse');
+            pulse.forEach(p => {
+                p.style.animation = 'none';
+                setTimeout(() => p.style.animation = '', 10);
+            });
+        }
+
+        function rotateMap() {
+            const map = document.querySelector('.map-svg');
+            const currentRotation = map.dataset.rotation || 0;
+            const newRotation = (parseFloat(currentRotation) + 15) % 360;
+            map.dataset.rotation = newRotation;
+            map.style.transform = `rotate(${newRotation}deg)`;
+            map.style.transition = 'transform 0.5s ease';
+        }
+
+        function changeLayer(el, type) {
+            const options = document.querySelectorAll('.layer-option');
+            options.forEach(opt => opt.classList.remove('active'));
+            el.classList.add('active');
+            
+            const mapContainer = document.querySelector('.map-container');
+            switch(type) {
+                case 'standard':
+                    mapContainer.style.background = 
+                        'radial-gradient(ellipse at 30% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 50%), linear-gradient(180deg, #0a0e17 0%, #0d1525 50%, #0a0e17 100%)';
+                    break;
+                case 'satellite':
+                    mapContainer.style.background = 
+                        'radial-gradient(ellipse at 50% 50%, rgba(34, 197, 94, 0.1) 0%, transparent 70%), linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)';
+                    break;
+                case 'terrain':
+                    mapContainer.style.background = 
+                        'radial-gradient(ellipse at 30% 30%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, rgba(34, 197, 94, 0.1) 0%, transparent 50%), linear-gradient(180deg, #020617 0%, #0f172a 50%, #020617 100%)';
+                    break;
+            }
+        }
+
+        function handleSearch(value) {
+            const results = document.getElementById('searchResults');
+            if (value.length > 0) {
+                results.classList.add('active');
+            } else {
+                results.classList.remove('active');
+            }
+        }
+
+        function toggleResults(show) {
+            const results = document.getElementById('searchResults');
+            if (show) {
+                results.classList.add('active');
+            }
+        }
+
+        function selectResult(name) {
+            document.getElementById('searchInput').value = name;
+            document.getElementById('searchResults').classList.remove('active');
+        }
+
+        function showPOIInfo(event, title, subtitle, content, distance, color) {
+            const popup = document.getElementById('infoPopup');
+            
+            const iconMap = {
+                '医院': '🏥',
+                '交通枢纽': '🚄',
+                '购物中心': '🛒',
+                '科技园区': '🏢',
+                '教育机构': '🎓',
+                '酒店': '🏨'
+            };
+            
+            document.getElementById('popupIcon').textContent = iconMap[title] || '📍';
+            document.getElementById('popupIcon').parentElement.style.background = `${color}20`;
+            document.getElementById('popupTitle').textContent = title;
+            document.getElementById('popupSubtitle').textContent = subtitle;
+            document.getElementById('popupContent').textContent = content;
+            document.getElementById('popupDistance').textContent = distance + 'km';
+            
+            popup.style.left = `${event.pageX + 15}px`;
+            popup.style.top = `${event.pageY - 80}px`;
+            popup.classList.add('active');
+        }
+
+        function closePopup() {
+            document.getElementById('infoPopup').classList.remove('active');
+        }
+
+        document.addEventListener('click', function(e) {
+            const results = document.getElementById('searchResults');
+            const searchContainer = document.querySelector('.search-container');
+            if (!searchContainer.contains(e.target)) {
+                results.classList.remove('active');
+            }
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            const x = ((e.clientX / window.innerWidth) * 180 - 90).toFixed(4);
+            const y = ((e.clientY / window.innerHeight) * 90 - 45).toFixed(4);
+        });
+
+        createParticles();
+
+        console.log('%c NEON MAP System Initialized ', 'background: linear-gradient(90deg, #00d4ff, #a855f7); color: white; font-size: 14px; padding: 4px 12px; border-radius: 4px;');
+        console.log('%c All systems operational • GPS locked • 5G connected', 'color: #00ffcc;');
+    </script>
+</body>
+</html>
