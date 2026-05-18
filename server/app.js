@@ -5,9 +5,13 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const fs = require('fs');
 
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+const isVercel = process.env.VERCEL === '1';
+
+if (!isVercel) {
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+    }
 }
 
 require('./init-db');
@@ -145,6 +149,8 @@ function startServer(port) {
     });
 }
 
-startServer(PORT);
+if (!isVercel) {
+    startServer(PORT);
+}
 
 module.exports = app;

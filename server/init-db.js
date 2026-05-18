@@ -2,7 +2,10 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.join(__dirname, 'data', 'herbmap.db');
+const isVercel = process.env.VERCEL === '1';
+const dbPath = isVercel
+    ? path.join('/tmp', 'herbmap.db')
+    : path.join(__dirname, 'data', 'herbmap.db');
 
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
