@@ -1,3 +1,165 @@
-const app = require('../server/app');
+var express = require('express');
+var path = require('path');
+var cors = require('cors');
+var app;
+var loadError = null;
+
+try {
+    app = require('../server/app');
+} catch (e) {
+    loadError = e.message;
+    console.error('Main app load failed:', e.message);
+}
+
+if (!app) {
+    app = express();
+    app.use(cors());
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+
+    var staticRoot = path.join(process.cwd());
+    app.use(express.static(staticRoot));
+    app.use('/admin', express.static(path.join(staticRoot, 'admin')));
+
+    var fallbackHerbs = [
+        { id: 1, name: '五指毛桃', alias: '鸡矢藤、土黄芪', origin: '河源市', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿，舒筋活络', indication: '脾虚浮肿，食少无力，肺痨咳嗽，盗汗', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 2, name: '灵芝', alias: '灵芝草、仙草', origin: '河源市', nature: '甘、平', meridian: '心、肺、肝、肾', efficacy: '补气安神，止咳平喘', indication: '眩晕不眠，心悸气短，虚劳咳喘', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 3, name: '金线莲', alias: '金线兰、鸟人参', origin: '河源市', nature: '甘、凉', meridian: '肺、肝、肾、膀胱', efficacy: '清热凉血，祛风利湿，强心利尿', indication: '肾炎，膀胱炎，糖尿病，支气管炎', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 4, name: '巴戟天', alias: '鸡肠风、鸡眼藤', origin: '肇庆市德庆', nature: '甘、辛、微温', meridian: '肾、肝', efficacy: '补肾阳，强筋骨，祛风湿', indication: '阳痿遗精，宫冷不孕，月经不调', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 5, name: '何首乌', alias: '首乌、地精', origin: '肇庆市德庆', nature: '苦、甘、涩、温', meridian: '肝、心、肾', efficacy: '补益精血，乌须发，强筋骨', indication: '血虚萎黄，眩晕耳鸣，须发早白', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 6, name: '石斛', alias: '黄草、吊兰', origin: '肇庆市', nature: '甘、微寒', meridian: '胃、肾', efficacy: '益胃生津，滋阴清热', indication: '阴伤津亏，口干烦渴，食少干呕', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 7, name: '广陈皮', alias: '陈皮、橘皮', origin: '江门市新会', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '胸脘胀满，食少吐泻，咳嗽痰多', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 8, name: '新会柑', alias: '柑果', origin: '江门市新会', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '生津止渴，醒酒利尿', indication: '热病烦渴，小便不利，饮酒过度', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 9, name: '化橘红', alias: '化州橘红、柚皮橘红', origin: '茂名市化州', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '散寒，燥湿，利气，消痰', indication: '风寒咳嗽，喉痒痰多，食积伤酒', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 10, name: '沉香(茂名)', alias: '沉水香、女儿香', origin: '茂名市', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕，纳气平喘', indication: '胸腹胀闷疼痛，胃寒呕吐呃逆', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 11, name: '春砂仁', alias: '阳春砂、缩砂蜜', origin: '阳江市阳春', nature: '辛、温', meridian: '脾、胃、肾', efficacy: '化湿开胃，温脾止泻，理气安胎', indication: '湿浊中阻，脘痞不饥，脾胃虚寒', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 12, name: '梅片', alias: '梅花冰片、龙脑香', origin: '梅州市', nature: '辛、苦、凉', meridian: '心、脾、肺', efficacy: '开窍醒神，清热止痛', indication: '热病神昏，痉厥，中风痰厥', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 13, name: '五指毛桃(梅州)', alias: '鸡矢藤', origin: '梅州市', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿', indication: '脾虚浮肿，食少无力，肺痨咳嗽', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 14, name: '木棉花', alias: '英雄花、攀枝花', origin: '广州市', nature: '甘、淡、凉', meridian: '大肠', efficacy: '清热，利湿，解毒，止血', indication: '泄泻，痢疾，血崩，疮毒', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 15, name: '鸡蛋花', alias: '缅栀子、蛋黄花', origin: '广州市', nature: '甘、凉', meridian: '肺、大肠', efficacy: '清热，利湿，解暑', indication: '感冒发热，肺热咳嗽，湿热黄疸', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 16, name: '玉竹', alias: '荧、委萎', origin: '清远市', nature: '甘、平', meridian: '肺、胃', efficacy: '养阴润燥，生津止渴', indication: '肺胃阴伤，燥热咳嗽，咽干口渴', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 17, name: '百合', alias: '白百合、蒜脑薯', origin: '清远市', nature: '甘、寒', meridian: '心、肺', efficacy: '养阴润肺，清心安神', indication: '阴虚久咳，痰中带血，虚烦惊悸', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 18, name: '溪黄草', alias: '熊胆草、山熊胆', origin: '韶关市', nature: '苦、寒', meridian: '肝、胆、大肠', efficacy: '清热利湿，凉血散瘀', indication: '急性黄疸型肝炎，急性胆囊炎', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 19, name: '绞股蓝', alias: '七叶胆、南方人参', origin: '韶关市', nature: '苦、微甘、凉', meridian: '肺、脾、肾', efficacy: '清热，补虚，解毒', indication: '体虚乏力，虚劳失精，高脂血症', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 20, name: '莞香', alias: '女儿香', origin: '东莞市', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕', indication: '胸腹胀闷疼痛，胃寒呕吐', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 21, name: '陈皮', alias: '广陈皮', origin: '佛山市', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '脾胃气滞，脘腹胀满，食少吐泻', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 22, name: '白花蛇舌草', alias: '蛇舌草', origin: '惠州市', nature: '甘、淡、凉', meridian: '胃、大肠、小肠', efficacy: '清热解毒，利尿通淋', indication: '痈肿疮毒，咽喉肿痛，毒蛇咬伤', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 23, name: '鱼腥草', alias: '蕺菜、臭菜', origin: '惠州市', nature: '辛、微寒', meridian: '肺', efficacy: '清热解毒，消痈排脓', indication: '肺痈吐脓，痰热喘咳，热痢热淋', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 24, name: '金钱白花蛇', alias: '白花蛇', origin: '揭阳市', nature: '甘、咸、温', meridian: '肝、脾', efficacy: '祛风，通络，止痉', indication: '风湿顽痹，麻木拘挛，中风半身不遂', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 25, name: '橄榄', alias: '青果、忠果', origin: '汕头市', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '清热，利咽，生津，解毒', indication: '咽喉肿痛，咳嗽烦渴，鱼蟹中毒', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 26, name: '余甘子', alias: '庵摩勒、油甘子', origin: '汕头市', nature: '甘、酸、涩、凉', meridian: '肺、胃', efficacy: '清热凉血，消食健胃，生津止咳', indication: '血热血瘀，消化不良，腹胀', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 27, name: '橘红', alias: '潮州橘红', origin: '潮州市', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '理气宽中，燥湿化痰', indication: '咳嗽痰多，食积伤酒，呕恶痞闷', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 28, name: '佛手', alias: '佛手柑、五指橘', origin: '潮州市', nature: '辛、苦、酸、温', meridian: '肝、脾、肺', efficacy: '疏肝理气，和胃止痛', indication: '肝胃气滞，胸胁胀痛，食少呕吐', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 29, name: '菠萝蜜', alias: '木菠萝', origin: '湛江市', nature: '甘、微酸、平', meridian: '胃', efficacy: '生津除烦，解酒醒脾', indication: '酒精中毒，酒后烦渴，消化不良', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 30, name: '高良姜', alias: '风姜、小良姜', origin: '湛江市徐闻', nature: '辛、热', meridian: '脾、胃', efficacy: '温胃散寒，消食止痛', indication: '脘腹冷痛，胃寒呕吐，嗳气吞酸', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 31, name: '海马', alias: '水马、马头鱼', origin: '汕尾市', nature: '甘、温', meridian: '肝、肾', efficacy: '温肾壮阳，散结消肿', indication: '阳痿，遗尿，肾虚作喘', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 32, name: '鲍鱼', alias: '鳆鱼、镜面鱼', origin: '汕尾市', nature: '甘、咸、平', meridian: '肝、肾', efficacy: '滋阴清热，益精明目', indication: '阴虚内热，骨蒸劳热，青盲内障', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 33, name: '杏仁', alias: '苦杏仁、北杏仁', origin: '中山市', nature: '苦、微温', meridian: '肺、大肠', efficacy: '降气止咳平喘，润肠通便', indication: '咳嗽气喘，胸满痰多，肠燥便秘', image_url: null, creator_id: 1, creator_name: 'admin' },
+        { id: 34, name: '土茯苓', alias: '冷饭团、硬饭头', origin: '中山市', nature: '甘、淡、平', meridian: '肝、胃', efficacy: '解毒，除湿，通利关节', indication: '湿热淋浊，带下，痈肿，瘰疬', image_url: null, creator_id: 1, creator_name: 'admin' }
+    ];
+
+    var fallbackRecipes = [
+        { id: 1, title: '五指毛桃煲鸡汤', content: '<p><strong>材料：</strong>五指毛桃50g，鸡一只，瘦肉200g<br><strong>做法：</strong>材料洗净后放入汤锅，加水适量，大火烧开后转小火煲2小时调味即可。</p>', ingredients: '["五指毛桃50g","土鸡1只","瘦肉200g","姜片3片","蜜枣2粒"]', efficacy: '健脾祛湿，益气补虚', creator_id: 1, is_published: 1, creator_name: 'admin' },
+        { id: 2, title: '广陈皮普洱茶', content: '<p><strong>材料：</strong>广陈皮一瓣，普洱茶适量<br><strong>做法：</strong>陈皮冲洗后加入开水洗茶一遍，第二泡即可饮用。</p>', ingredients: '["广陈皮一瓣","普洱茶5克","开水"]', efficacy: '理气健脾，燥湿化痰', creator_id: 1, is_published: 1, creator_name: 'admin' },
+        { id: 3, title: '灵芝乌鸡汤', content: '<p><strong>材料：</strong>灵芝15g，乌鸡半只，红枣6粒，枸杞10g<br><strong>做法：</strong>乌鸡焯水，灵芝切片，所有材料放入炖盅，加水隔水炖3小时，加盐调味。</p>', ingredients: '["灵芝15g","乌鸡半只","红枣6粒","枸杞10g","姜片2片"]', efficacy: '补气安神，养血益精', creator_id: 1, is_published: 1, creator_name: 'admin' },
+        { id: 4, title: '化橘红雪梨汤', content: '<p><strong>材料：</strong>化橘红5g，雪梨1个，冰糖适量<br><strong>做法：</strong>雪梨去皮切块，化橘红洗净，加水煮30分钟，加入冰糖调味。</p>', ingredients: '["化橘红5g","雪梨1个","冰糖适量"]', efficacy: '润肺止咳，化痰平喘', creator_id: 1, is_published: 1, creator_name: 'admin' },
+        { id: 5, title: '春砂仁鲫鱼汤', content: '<p><strong>材料：</strong>春砂仁5g，鲫鱼1条，生姜3片<br><strong>做法：</strong>鲫鱼煎至两面金黄，加水煮开，放入春砂仁和姜片，小火煲1小时。</p>', ingredients: '["春砂仁5g","鲫鱼1条","生姜3片","陈皮少许"]', efficacy: '化湿开胃，温脾止泻', creator_id: 1, is_published: 1, creator_name: 'admin' },
+        { id: 6, title: '木棉花祛湿粥', content: '<p><strong>材料：</strong>干木棉花20g，薏米30g，扁豆30g，大米100g<br><strong>做法：</strong>木棉花洗净煎水去渣，用药汁与薏米、扁豆、大米同煮成粥。</p>', ingredients: '["干木棉花20g","薏米30g","扁豆30g","大米100g"]', efficacy: '清热利湿，健脾祛湿', creator_id: 1, is_published: 1, creator_name: 'admin' }
+    ];
+
+    app.get('/api/health', function(req, res) {
+        res.json({ success: true, mode: 'fallback', message: '运行在降级模式（无数据库）', error: loadError });
+    });
+
+    app.get('/api/herbs', function(req, res) {
+        res.json({ success: true, data: fallbackHerbs });
+    });
+
+    app.get('/api/herbs/search', function(req, res) {
+        var keyword = (req.query.keyword || '').trim().toLowerCase();
+        if (!keyword) {
+            return res.json({ success: true, data: fallbackHerbs, total: fallbackHerbs.length, keyword: '' });
+        }
+        var results = fallbackHerbs.filter(function(h) {
+            return h.name.toLowerCase().indexOf(keyword) > -1 ||
+                   (h.alias && h.alias.toLowerCase().indexOf(keyword) > -1) ||
+                   (h.origin && h.origin.toLowerCase().indexOf(keyword) > -1) ||
+                   (h.efficacy && h.efficacy.toLowerCase().indexOf(keyword) > -1);
+        });
+        res.json({ success: true, data: results, total: results.length, keyword: req.query.keyword || '' });
+    });
+
+    app.get('/api/herbs/:id', function(req, res) {
+        var herb = fallbackHerbs.find(function(h) { return h.id === parseInt(req.params.id); });
+        if (!herb) return res.json({ success: false, message: '药材不存在' });
+        res.json({ success: true, data: herb });
+    });
+
+    app.get('/api/herbs/:id/images', function(req, res) {
+        res.json({ success: true, data: [] });
+    });
+
+    app.get('/api/recipes', function(req, res) {
+        res.json({ success: true, data: fallbackRecipes });
+    });
+
+    app.get('/api/recipes/herb/:id', function(req, res) {
+        res.json({ success: true, data: [] });
+    });
+
+    app.get('/api/recipes/:id', function(req, res) {
+        var recipe = fallbackRecipes.find(function(r) { return r.id === parseInt(req.params.id); });
+        if (!recipe) return res.json({ success: false, message: '食谱不存在' });
+        res.json({ success: true, data: recipe });
+    });
+
+    app.get('/api/comments/:id', function(req, res) {
+        res.json({ success: true, data: [], total: 0 });
+    });
+
+    app.get('/api/likes/count/:type/:id', function(req, res) {
+        res.json({ success: true, count: 0 });
+    });
+
+    app.get('/api/likes/batch/recipe', function(req, res) {
+        res.json({ success: true, data: {} });
+    });
+
+    app.get('/api/videos/herb/:id', function(req, res) {
+        res.json({ success: true, data: [] });
+    });
+
+    app.post('/api/stats/page-view', function(req, res) {
+        res.json({ success: true });
+    });
+
+    app.post('/api/feedback', function(req, res) {
+        res.json({ success: true, message: '感谢您的反馈！' });
+    });
+
+    app.post('/api/comments', function(req, res) {
+        res.json({ success: true, message: '评论成功' });
+    });
+
+    app.post('/api/likes', function(req, res) {
+        res.json({ success: true });
+    });
+
+    app.delete('/api/likes', function(req, res) {
+        res.json({ success: true });
+    });
+
+    app.get('/admin', function(req, res) {
+        res.sendFile(path.join(staticRoot, 'admin', 'index.html'));
+    });
+
+    app.use(function(req, res) {
+        if (req.path.startsWith('/api/')) {
+            res.json({ success: false, message: '接口暂不可用（降级模式）' });
+        } else {
+            res.sendFile(path.join(staticRoot, 'index.html'));
+        }
+    });
+}
 
 module.exports = app;

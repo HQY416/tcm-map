@@ -12,25 +12,9 @@
           "admin/**"
         ]
       }
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "tech-map.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "admin/index.html",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index" },
-    { "src": "/uploads/(.*)", "dest": "/api/index" },
-    { "src": "/admin", "dest": "/admin/index.html" },
-    { "src": "/tech-map", "dest": "/tech-map.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "/api/index" }
   ]
 }
