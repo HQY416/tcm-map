@@ -1846,10 +1846,21 @@
                     submitting.value = true;
                     try {
                         let res;
+                        var saveData = {
+                            name: herbForm.name,
+                            alias: herbForm.alias,
+                            origin: herbForm.origin,
+                            nature: herbForm.nature,
+                            meridian: herbForm.meridian,
+                            efficacy: herbForm.efficacy,
+                            indication: herbForm.indication,
+                            creator_id: userInfo.value.id
+                        };
                         if (herbForm.id) {
-                            res = await api.put(`/herbs/${herbForm.id}`, { ...herbForm, creator_id: userInfo.value.id });
+                            res = await api.put(`/herbs/${herbForm.id}`, saveData);
                         } else {
-                            res = await api.post('/herbs', { ...herbForm, creator_id: userInfo.value.id });
+                            saveData.image_url = herbForm.image_url || null;
+                            res = await api.post('/herbs', saveData);
                         }
                         if (res.data.success) {
                             showHerbModal.value = false;

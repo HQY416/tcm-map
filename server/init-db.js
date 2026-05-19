@@ -238,7 +238,8 @@ function insertSampleData() {
                 rebuildSearchIndex();
             });
         } else {
-            console.log('药材数据已存在, 跳过初始化');
+            console.log('药材数据已存在, 修复缺失图片...');
+            fixMissingImages(sampleHerbs);
         }
     });
 
@@ -278,6 +279,32 @@ function insertSampleData() {
             });
         } else {
             console.log('食谱数据已存在, 跳过初始化');
+        }
+    });
+}
+
+function fixMissingImages(sampleHerbs) {
+    const herbNameToImage = {};
+    sampleHerbs.forEach(h => {
+        if (h.image_url) herbNameToImage[h.name] = h.image_url;
+    });
+
+    db.all('SELECT id, name, image_url FROM herbs', (err, herbs) => {
+        if (err || !herbs) return;
+        let fixed = 0;
+        herbs.forEach(herb => {
+            if (!herb.image_url && herbNameToImage[herb.name]) {
+                db.run('UPDATE herbs SET image_url = ? WHERE id = ?', [herbNameToImage[herb.name], herb.id], () => {
+                    fixed++;
+                });
+            }
+        });
+        if (fixed > 0) console.log('修复了 ' + fixed + ' 个药材的图片');
+    });
+
+    db.get('SELECT COUNT(*) as cnt FROM herb_images', (err, row) => {
+        if (row && row.cnt === 0) {
+            insertHerbImages();
         }
     });
 }

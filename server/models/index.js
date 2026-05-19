@@ -75,10 +75,10 @@ const Herb = {
             });
     },
     update: (id, data, callback) => {
-        const { name, alias, origin, nature, meridian, efficacy, indication, image_url } = data;
-        db.run(`UPDATE herbs SET name=?, alias=?, origin=?, nature=?, meridian=?, efficacy=?, indication=?, image_url=? 
+        const { name, alias, origin, nature, meridian, efficacy, indication } = data;
+        db.run(`UPDATE herbs SET name=?, alias=?, origin=?, nature=?, meridian=?, efficacy=?, indication=? 
                 WHERE id = ?`,
-            [name, alias, origin, nature, meridian, efficacy, indication, image_url || null, id], (err) => {
+            [name, alias, origin, nature, meridian, efficacy, indication, id], (err) => {
                 if (!err) {
                     const keywords = `${name} ${alias || ''} ${origin} ${nature} ${efficacy}`;
                     db.run('UPDATE search_index SET keywords = ? WHERE herb_id = ?', [keywords, id]);
