@@ -1,9 +1,5 @@
 node_modules/
 server/data/*.db
-server/uploads/herbs/*.jpg
-server/uploads/herbs/*.png
-server/uploads/herbs/*.webp
-server/uploads/video_*.mp4
 .DS_Store
 Thumbs.db
 *.log

@@ -190,50 +190,51 @@ function initTables() {
 
 function insertSampleData() {
     const sampleHerbs = [
-        { name: '五指毛桃', alias: '鸡矢藤、土黄芪', origin: '河源市', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿，舒筋活络', indication: '脾虚浮肿，食少无力，肺痨咳嗽，盗汗', creator_id: 1 },
-        { name: '灵芝', alias: '灵芝草、仙草', origin: '河源市', nature: '甘、平', meridian: '心、肺、肝、肾', efficacy: '补气安神，止咳平喘', indication: '眩晕不眠，心悸气短，虚劳咳喘', creator_id: 1 },
-        { name: '金线莲', alias: '金线兰、鸟人参', origin: '河源市', nature: '甘、凉', meridian: '肺、肝、肾、膀胱', efficacy: '清热凉血，祛风利湿，强心利尿', indication: '肾炎，膀胱炎，糖尿病，支气管炎', creator_id: 1 },
-        { name: '巴戟天', alias: '鸡肠风、鸡眼藤', origin: '肇庆市德庆', nature: '甘、辛、微温', meridian: '肾、肝', efficacy: '补肾阳，强筋骨，祛风湿', indication: '阳痿遗精，宫冷不孕，月经不调', creator_id: 1 },
-        { name: '何首乌', alias: '首乌、地精', origin: '肇庆市德庆', nature: '苦、甘、涩、温', meridian: '肝、心、肾', efficacy: '补益精血，乌须发，强筋骨', indication: '血虚萎黄，眩晕耳鸣，须发早白', creator_id: 1 },
-        { name: '石斛', alias: '黄草、吊兰', origin: '肇庆市', nature: '甘、微寒', meridian: '胃、肾', efficacy: '益胃生津，滋阴清热', indication: '阴伤津亏，口干烦渴，食少干呕', creator_id: 1 },
-        { name: '广陈皮', alias: '陈皮、橘皮', origin: '江门市新会', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '胸脘胀满，食少吐泻，咳嗽痰多', creator_id: 1 },
-        { name: '新会柑', alias: '柑果', origin: '江门市新会', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '生津止渴，醒酒利尿', indication: '热病烦渴，小便不利，饮酒过度', creator_id: 1 },
-        { name: '化橘红', alias: '化州橘红、柚皮橘红', origin: '茂名市化州', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '散寒，燥湿，利气，消痰', indication: '风寒咳嗽，喉痒痰多，食积伤酒', creator_id: 1 },
-        { name: '沉香(茂名)', alias: '沉水香、女儿香', origin: '茂名市', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕，纳气平喘', indication: '胸腹胀闷疼痛，胃寒呕吐呃逆', creator_id: 1 },
-        { name: '春砂仁', alias: '阳春砂、缩砂蜜', origin: '阳江市阳春', nature: '辛、温', meridian: '脾、胃、肾', efficacy: '化湿开胃，温脾止泻，理气安胎', indication: '湿浊中阻，脘痞不饥，脾胃虚寒', creator_id: 1 },
-        { name: '梅片', alias: '梅花冰片、龙脑香', origin: '梅州市', nature: '辛、苦、凉', meridian: '心、脾、肺', efficacy: '开窍醒神，清热止痛', indication: '热病神昏，痉厥，中风痰厥', creator_id: 1 },
-        { name: '木棉花', alias: '英雄花、攀枝花', origin: '广州市', nature: '甘、淡、凉', meridian: '大肠', efficacy: '清热，利湿，解毒，止血', indication: '泄泻，痢疾，血崩，疮毒', creator_id: 1 },
-        { name: '鸡蛋花', alias: '缅栀子、蛋黄花', origin: '广州市', nature: '甘、凉', meridian: '肺、大肠', efficacy: '清热，利湿，解暑', indication: '感冒发热，肺热咳嗽，湿热黄疸', creator_id: 1 },
-        { name: '玉竹', alias: '荧、委萎', origin: '清远市', nature: '甘、平', meridian: '肺、胃', efficacy: '养阴润燥，生津止渴', indication: '肺胃阴伤，燥热咳嗽，咽干口渴', creator_id: 1 },
-        { name: '百合', alias: '白百合、蒜脑薯', origin: '清远市', nature: '甘、寒', meridian: '心、肺', efficacy: '养阴润肺，清心安神', indication: '阴虚久咳，痰中带血，虚烦惊悸', creator_id: 1 },
-        { name: '溪黄草', alias: '熊胆草、山熊胆', origin: '韶关市', nature: '苦、寒', meridian: '肝、胆、大肠', efficacy: '清热利湿，凉血散瘀', indication: '急性黄疸型肝炎，急性胆囊炎', creator_id: 1 },
-        { name: '绞股蓝', alias: '七叶胆、南方人参', origin: '韶关市', nature: '苦、微甘、凉', meridian: '肺、脾、肾', efficacy: '清热，补虚，解毒', indication: '体虚乏力，虚劳失精，高脂血症', creator_id: 1 },
-        { name: '莞香', alias: '女儿香', origin: '东莞市', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕', indication: '胸腹胀闷疼痛，胃寒呕吐', creator_id: 1 },
-        { name: '陈皮', alias: '广陈皮', origin: '佛山市', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '脾胃气滞，脘腹胀满，食少吐泻', creator_id: 1 },
-        { name: '白花蛇舌草', alias: '蛇舌草', origin: '惠州市', nature: '甘、淡、凉', meridian: '胃、大肠、小肠', efficacy: '清热解毒，利尿通淋', indication: '痈肿疮毒，咽喉肿痛，毒蛇咬伤', creator_id: 1 },
-        { name: '鱼腥草', alias: '蕺菜、臭菜', origin: '惠州市', nature: '辛、微寒', meridian: '肺', efficacy: '清热解毒，消痈排脓', indication: '肺痈吐脓，痰热喘咳，热痢热淋', creator_id: 1 },
-        { name: '金钱白花蛇', alias: '白花蛇', origin: '揭阳市', nature: '甘、咸、温', meridian: '肝、脾', efficacy: '祛风，通络，止痉', indication: '风湿顽痹，麻木拘挛，中风半身不遂', creator_id: 1 },
-        { name: '橄榄', alias: '青果、忠果', origin: '汕头市', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '清热，利咽，生津，解毒', indication: '咽喉肿痛，咳嗽烦渴，鱼蟹中毒', creator_id: 1 },
-        { name: '余甘子', alias: '庵摩勒、油甘子', origin: '汕头市', nature: '甘、酸、涩、凉', meridian: '肺、胃', efficacy: '清热凉血，消食健胃，生津止咳', indication: '血热血瘀，消化不良，腹胀', creator_id: 1 },
-        { name: '橘红', alias: '潮州橘红', origin: '潮州市', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '理气宽中，燥湿化痰', indication: '咳嗽痰多，食积伤酒，呕恶痞闷', creator_id: 1 },
-        { name: '佛手', alias: '佛手柑、五指橘', origin: '潮州市', nature: '辛、苦、酸、温', meridian: '肝、脾、肺', efficacy: '疏肝理气，和胃止痛', indication: '肝胃气滞，胸胁胀痛，食少呕吐', creator_id: 1 },
-        { name: '菠萝蜜', alias: '木菠萝', origin: '湛江市', nature: '甘、微酸、平', meridian: '胃', efficacy: '生津除烦，解酒醒脾', indication: '酒精中毒，酒后烦渴，消化不良', creator_id: 1 },
-        { name: '高良姜', alias: '风姜、小良姜', origin: '湛江市徐闻', nature: '辛、热', meridian: '脾、胃', efficacy: '温胃散寒，消食止痛', indication: '脘腹冷痛，胃寒呕吐，嗳气吞酸', creator_id: 1 },
-        { name: '海马', alias: '水马、马头鱼', origin: '汕尾市', nature: '甘、温', meridian: '肝、肾', efficacy: '温肾壮阳，散结消肿', indication: '阳痿，遗尿，肾虚作喘', creator_id: 1 },
-        { name: '鲍鱼', alias: '鳆鱼、镜面鱼', origin: '汕尾市', nature: '甘、咸、平', meridian: '肝、肾', efficacy: '滋阴清热，益精明目', indication: '阴虚内热，骨蒸劳热，青盲内障', creator_id: 1 },
-        { name: '杏仁', alias: '苦杏仁、北杏仁', origin: '中山市', nature: '苦、微温', meridian: '肺、大肠', efficacy: '降气止咳平喘，润肠通便', indication: '咳嗽气喘，胸满痰多，肠燥便秘', creator_id: 1 },
-        { name: '土茯苓', alias: '冷饭团、硬饭头', origin: '中山市', nature: '甘、淡、平', meridian: '肝、胃', efficacy: '解毒，除湿，通利关节', indication: '湿热淋浊，带下，痈肿，瘰疬', creator_id: 1 },
-        { name: '五指毛桃(梅州)', alias: '鸡矢藤', origin: '梅州市', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿', indication: '脾虚浮肿，食少无力，肺痨咳嗽', creator_id: 1 }
+        { name: '五指毛桃', alias: '鸡矢藤、土黄芪', origin: '河源市', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿，舒筋活络', indication: '脾虚浮肿，食少无力，肺痨咳嗽，盗汗', creator_id: 1, image_url: '/uploads/herbs/herb_1779014051769_yw2qh8.jpg' },
+        { name: '灵芝', alias: '灵芝草、仙草', origin: '河源市', nature: '甘、平', meridian: '心、肺、肝、肾', efficacy: '补气安神，止咳平喘', indication: '眩晕不眠，心悸气短，虚劳咳喘', creator_id: 1, image_url: '/uploads/herbs/herb_1779014065678_z8u9ya.jpg' },
+        { name: '金线莲', alias: '金线兰、鸟人参', origin: '河源市', nature: '甘、凉', meridian: '肺、肝、肾、膀胱', efficacy: '清热凉血，祛风利湿，强心利尿', indication: '肾炎，膀胱炎，糖尿病，支气管炎', creator_id: 1, image_url: '/uploads/herbs/herb_1779014124374_2e9jb7.jpg' },
+        { name: '巴戟天', alias: '鸡肠风、鸡眼藤', origin: '肇庆市德庆', nature: '甘、辛、微温', meridian: '肾、肝', efficacy: '补肾阳，强筋骨，祛风湿', indication: '阳痿遗精，宫冷不孕，月经不调', creator_id: 1, image_url: '/uploads/herbs/herb_1779014132668_umxc0m.jpg' },
+        { name: '何首乌', alias: '首乌、地精', origin: '肇庆市德庆', nature: '苦、甘、涩、温', meridian: '肝、心、肾', efficacy: '补益精血，乌须发，强筋骨', indication: '血虚萎黄，眩晕耳鸣，须发早白', creator_id: 1, image_url: '/uploads/herbs/herb_1779014143797_7ep51c.jpg' },
+        { name: '石斛', alias: '黄草、吊兰', origin: '肇庆市', nature: '甘、微寒', meridian: '胃、肾', efficacy: '益胃生津，滋阴清热', indication: '阴伤津亏，口干烦渴，食少干呕', creator_id: 1, image_url: '/uploads/herbs/herb_1779013023101_x3zlyu.jpg' },
+        { name: '广陈皮', alias: '陈皮、橘皮', origin: '江门市新会', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '胸脘胀满，食少吐泻，咳嗽痰多', creator_id: 1, image_url: '/uploads/herbs/herb_1779013034689_ebfgjy.jpg' },
+        { name: '新会柑', alias: '柑果', origin: '江门市新会', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '生津止渴，醒酒利尿', indication: '热病烦渴，小便不利，饮酒过度', creator_id: 1, image_url: '/uploads/herbs/herb_1779013048318_oir7z4.jpg' },
+        { name: '化橘红', alias: '化州橘红、柚皮橘红', origin: '茂名市化州', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '散寒，燥湿，利气，消痰', indication: '风寒咳嗽，喉痒痰多，食积伤酒', creator_id: 1, image_url: '/uploads/herbs/herb_1779013058420_b9qum0.jpg' },
+        { name: '沉香(茂名)', alias: '沉水香、女儿香', origin: '茂名市', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕，纳气平喘', indication: '胸腹胀闷疼痛，胃寒呕吐呃逆', creator_id: 1, image_url: '/uploads/herbs/herb_1779013711941_kyn5kf.jpg' },
+        { name: '春砂仁', alias: '阳春砂、缩砂蜜', origin: '阳江市阳春', nature: '辛、温', meridian: '脾、胃、肾', efficacy: '化湿开胃，温脾止泻，理气安胎', indication: '湿浊中阻，脘痞不饥，脾胃虚寒', creator_id: 1, image_url: '/uploads/herbs/herb_1779013724986_k0hytz.jpg' },
+        { name: '梅片', alias: '梅花冰片、龙脑香', origin: '梅州市', nature: '辛、苦、凉', meridian: '心、脾、肺', efficacy: '开窍醒神，清热止痛', indication: '热病神昏，痉厥，中风痰厥', creator_id: 1, image_url: '/uploads/herbs/herb_1779013743257_1k9x2l.jpg' },
+        { name: '木棉花', alias: '英雄花、攀枝花', origin: '广州市', nature: '甘、淡、凉', meridian: '大肠', efficacy: '清热，利湿，解毒，止血', indication: '泄泻，痢疾，血崩，疮毒', creator_id: 1, image_url: '/uploads/herbs/herb_1779013758184_6u4ib6.jpg' },
+        { name: '鸡蛋花', alias: '缅栀子、蛋黄花', origin: '广州市', nature: '甘、凉', meridian: '肺、大肠', efficacy: '清热，利湿，解暑', indication: '感冒发热，肺热咳嗽，湿热黄疸', creator_id: 1, image_url: '/uploads/herbs/herb_1779013769777_htv3on.jpg' },
+        { name: '玉竹', alias: '荧、委萎', origin: '清远市', nature: '甘、平', meridian: '肺、胃', efficacy: '养阴润燥，生津止渴', indication: '肺胃阴伤，燥热咳嗽，咽干口渴', creator_id: 1, image_url: '/uploads/herbs/herb_1779013785923_ddq9yz.jpg' },
+        { name: '百合', alias: '白百合、蒜脑薯', origin: '清远市', nature: '甘、寒', meridian: '心、肺', efficacy: '养阴润肺，清心安神', indication: '阴虚久咳，痰中带血，虚烦惊悸', creator_id: 1, image_url: '/uploads/herbs/herb_1779013795489_pq7vlj.jpg' },
+        { name: '溪黄草', alias: '熊胆草、山熊胆', origin: '韶关市', nature: '苦、寒', meridian: '肝、胆、大肠', efficacy: '清热利湿，凉血散瘀', indication: '急性黄疸型肝炎，急性胆囊炎', creator_id: 1, image_url: '/uploads/herbs/herb_1779013814956_79ree6.jpg' },
+        { name: '绞股蓝', alias: '七叶胆、南方人参', origin: '韶关市', nature: '苦、微甘、凉', meridian: '肺、脾、肾', efficacy: '清热，补虚，解毒', indication: '体虚乏力，虚劳失精，高脂血症', creator_id: 1, image_url: '/uploads/herbs/herb_1779013828019_jilr88.jpg' },
+        { name: '莞香', alias: '女儿香', origin: '东莞市', nature: '辛、苦、微温', meridian: '脾、胃、肾', efficacy: '行气止痛，温中止呕', indication: '胸腹胀闷疼痛，胃寒呕吐', creator_id: 1, image_url: '/uploads/herbs/herb_1779013839647_cipvlq.jpg' },
+        { name: '陈皮', alias: '广陈皮', origin: '佛山市', nature: '苦、辛、温', meridian: '肺、脾', efficacy: '理气健脾，燥湿化痰', indication: '脾胃气滞，脘腹胀满，食少吐泻', creator_id: 1, image_url: '/uploads/herbs/herb_1779013883413_15jxwu.jpg' },
+        { name: '白花蛇舌草', alias: '蛇舌草', origin: '惠州市', nature: '甘、淡、凉', meridian: '胃、大肠、小肠', efficacy: '清热解毒，利尿通淋', indication: '痈肿疮毒，咽喉肿痛，毒蛇咬伤', creator_id: 1, image_url: '/uploads/herbs/herb_1779013920829_3huqaw.jpg' },
+        { name: '鱼腥草', alias: '蕺菜、臭菜', origin: '惠州市', nature: '辛、微寒', meridian: '肺', efficacy: '清热解毒，消痈排脓', indication: '肺痈吐脓，痰热喘咳，热痢热淋', creator_id: 1, image_url: '/uploads/herbs/herb_1779013939346_5s33vp.jpg' },
+        { name: '金钱白花蛇', alias: '白花蛇', origin: '揭阳市', nature: '甘、咸、温', meridian: '肝、脾', efficacy: '祛风，通络，止痉', indication: '风湿顽痹，麻木拘挛，中风半身不遂', creator_id: 1, image_url: '/uploads/herbs/herb_1779013948642_pfsmqx.jpg' },
+        { name: '橄榄', alias: '青果、忠果', origin: '汕头市', nature: '甘、酸、平', meridian: '肺、胃', efficacy: '清热，利咽，生津，解毒', indication: '咽喉肿痛，咳嗽烦渴，鱼蟹中毒', creator_id: 1, image_url: '/uploads/herbs/herb_1779013959110_55al70.jpg' },
+        { name: '余甘子', alias: '庵摩勒、油甘子', origin: '汕头市', nature: '甘、酸、涩、凉', meridian: '肺、胃', efficacy: '清热凉血，消食健胃，生津止咳', indication: '血热血瘀，消化不良，腹胀', creator_id: 1, image_url: '/uploads/herbs/herb_1779013971935_n3jhq8.jpg' },
+        { name: '橘红', alias: '潮州橘红', origin: '潮州市', nature: '辛、苦、温', meridian: '肺、脾', efficacy: '理气宽中，燥湿化痰', indication: '咳嗽痰多，食积伤酒，呕恶痞闷', creator_id: 1, image_url: '/uploads/herbs/herb_1779019853242_nsgw1f.jpg' },
+        { name: '佛手', alias: '佛手柑、五指橘', origin: '潮州市', nature: '辛、苦、酸、温', meridian: '肝、脾、肺', efficacy: '疏肝理气，和胃止痛', indication: '肝胃气滞，胸胁胀痛，食少呕吐', creator_id: 1, image_url: '/uploads/herbs/herb_1779013993743_wetji4.jpg' },
+        { name: '菠萝蜜', alias: '木菠萝', origin: '湛江市', nature: '甘、微酸、平', meridian: '胃', efficacy: '生津除烦，解酒醒脾', indication: '酒精中毒，酒后烦渴，消化不良', creator_id: 1, image_url: '/uploads/herbs/herb_1779014002315_di478v.jpg' },
+        { name: '高良姜', alias: '风姜、小良姜', origin: '湛江市徐闻', nature: '辛、热', meridian: '脾、胃', efficacy: '温胃散寒，消食止痛', indication: '脘腹冷痛，胃寒呕吐，嗳气吞酸', creator_id: 1, image_url: '/uploads/herbs/herb_1779014012175_l3sumw.jpg' },
+        { name: '海马', alias: '水马、马头鱼', origin: '汕尾市', nature: '甘、温', meridian: '肝、肾', efficacy: '温肾壮阳，散结消肿', indication: '阳痿，遗尿，肾虚作喘', creator_id: 1, image_url: '/uploads/herbs/herb_1779014021817_949x6x.jpg' },
+        { name: '鲍鱼', alias: '鳆鱼、镜面鱼', origin: '汕尾市', nature: '甘、咸、平', meridian: '肝、肾', efficacy: '滋阴清热，益精明目', indication: '阴虚内热，骨蒸劳热，青盲内障', creator_id: 1, image_url: '/uploads/herbs/herb_1779012957545_8er1pw.jpg' },
+        { name: '杏仁', alias: '苦杏仁、北杏仁', origin: '中山市', nature: '苦、微温', meridian: '肺、大肠', efficacy: '降气止咳平喘，润肠通便', indication: '咳嗽气喘，胸满痰多，肠燥便秘', creator_id: 1, image_url: '/uploads/herbs/herb_1779012976194_d8v3ie.jpg' },
+        { name: '土茯苓', alias: '冷饭团、硬饭头', origin: '中山市', nature: '甘、淡、平', meridian: '肝、胃', efficacy: '解毒，除湿，通利关节', indication: '湿热淋浊，带下，痈肿，瘰疬', creator_id: 1, image_url: '/uploads/herbs/herb_1779012990030_t687hb.jpg' },
+        { name: '五指毛桃(梅州)', alias: '鸡矢藤', origin: '梅州市', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿', indication: '脾虚浮肿，食少无力，肺痨咳嗽', creator_id: 1, image_url: '/uploads/herbs/herb_1779018469777_qglqnt.jpg' }
     ];
 
     db.get('SELECT COUNT(*) as cnt FROM herbs', (err, row) => {
         if (row && row.cnt === 0) {
             const stmt = db.prepare(`INSERT OR IGNORE INTO herbs 
-                (name, alias, origin, nature, meridian, efficacy, indication, creator_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-            sampleHerbs.forEach(h => stmt.run(h.name, h.alias, h.origin, h.nature, h.meridian, h.efficacy, h.indication, h.creator_id));
+                (name, alias, origin, nature, meridian, efficacy, indication, creator_id, image_url) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+            sampleHerbs.forEach(h => stmt.run(h.name, h.alias, h.origin, h.nature, h.meridian, h.efficacy, h.indication, h.creator_id, h.image_url || null));
             stmt.finalize(() => {
                 console.log('示例药材数据已插入');
+                insertHerbImages();
                 rebuildSearchIndex();
             });
         } else {
@@ -277,6 +278,54 @@ function insertSampleData() {
             });
         } else {
             console.log('食谱数据已存在, 跳过初始化');
+        }
+    });
+}
+
+function insertHerbImages() {
+    const herbImagesData = [
+        { herb_id: 1, image_url: '/uploads/herbs/herb_1779014051769_yw2qh8.jpg' },
+        { herb_id: 1, image_url: '/uploads/herbs/herb_1779015652992_ezk5at.png' },
+        { herb_id: 2, image_url: '/uploads/herbs/herb_1779014065678_z8u9ya.jpg' },
+        { herb_id: 3, image_url: '/uploads/herbs/herb_1779014124374_2e9jb7.jpg' },
+        { herb_id: 4, image_url: '/uploads/herbs/herb_1779014132668_umxc0m.jpg' },
+        { herb_id: 5, image_url: '/uploads/herbs/herb_1779014143797_7ep51c.jpg' },
+        { herb_id: 6, image_url: '/uploads/herbs/herb_1779013023101_x3zlyu.jpg' },
+        { herb_id: 7, image_url: '/uploads/herbs/herb_1779013034689_ebfgjy.jpg' },
+        { herb_id: 8, image_url: '/uploads/herbs/herb_1779013048318_oir7z4.jpg' },
+        { herb_id: 9, image_url: '/uploads/herbs/herb_1779013058420_b9qum0.jpg' },
+        { herb_id: 10, image_url: '/uploads/herbs/herb_1779013711941_kyn5kf.jpg' },
+        { herb_id: 11, image_url: '/uploads/herbs/herb_1779013724986_k0hytz.jpg' },
+        { herb_id: 12, image_url: '/uploads/herbs/herb_1779013743257_1k9x2l.jpg' },
+        { herb_id: 13, image_url: '/uploads/herbs/herb_1779013758184_6u4ib6.jpg' },
+        { herb_id: 14, image_url: '/uploads/herbs/herb_1779013769777_htv3on.jpg' },
+        { herb_id: 15, image_url: '/uploads/herbs/herb_1779013785923_ddq9yz.jpg' },
+        { herb_id: 16, image_url: '/uploads/herbs/herb_1779013795489_pq7vlj.jpg' },
+        { herb_id: 17, image_url: '/uploads/herbs/herb_1779013814956_79ree6.jpg' },
+        { herb_id: 18, image_url: '/uploads/herbs/herb_1779013828019_jilr88.jpg' },
+        { herb_id: 19, image_url: '/uploads/herbs/herb_1779013839647_cipvlq.jpg' },
+        { herb_id: 20, image_url: '/uploads/herbs/herb_1779013883413_15jxwu.jpg' },
+        { herb_id: 21, image_url: '/uploads/herbs/herb_1779013920829_3huqaw.jpg' },
+        { herb_id: 22, image_url: '/uploads/herbs/herb_1779013939346_5s33vp.jpg' },
+        { herb_id: 23, image_url: '/uploads/herbs/herb_1779013948642_pfsmqx.jpg' },
+        { herb_id: 24, image_url: '/uploads/herbs/herb_1779013959110_55al70.jpg' },
+        { herb_id: 25, image_url: '/uploads/herbs/herb_1779013971935_n3jhq8.jpg' },
+        { herb_id: 26, image_url: '/uploads/herbs/herb_1779019853242_nsgw1f.jpg' },
+        { herb_id: 27, image_url: '/uploads/herbs/herb_1779013993743_wetji4.jpg' },
+        { herb_id: 28, image_url: '/uploads/herbs/herb_1779014002315_di478v.jpg' },
+        { herb_id: 29, image_url: '/uploads/herbs/herb_1779014012175_l3sumw.jpg' },
+        { herb_id: 30, image_url: '/uploads/herbs/herb_1779014021817_949x6x.jpg' },
+        { herb_id: 31, image_url: '/uploads/herbs/herb_1779012957545_8er1pw.jpg' },
+        { herb_id: 32, image_url: '/uploads/herbs/herb_1779012976194_d8v3ie.jpg' },
+        { herb_id: 33, image_url: '/uploads/herbs/herb_1779012990030_t687hb.jpg' },
+        { herb_id: 34, image_url: '/uploads/herbs/herb_1779018469777_qglqnt.jpg' }
+    ];
+
+    db.get('SELECT COUNT(*) as cnt FROM herb_images', (err, row) => {
+        if (row && row.cnt === 0) {
+            const stmt = db.prepare('INSERT INTO herb_images (herb_id, image_url, sort_order) VALUES (?, ?, ?)');
+            herbImagesData.forEach((img, i) => stmt.run(img.herb_id, img.image_url, i));
+            stmt.finalize(() => console.log('药材图片数据已插入'));
         }
     });
 }
