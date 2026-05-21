@@ -172,6 +172,62 @@ function initTables() {
             FOREIGN KEY (user_id) REFERENCES users(id)
         )`);
 
+        db.run(`CREATE TABLE IF NOT EXISTS quiz_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question TEXT NOT NULL,
+            options TEXT NOT NULL,
+            correct_index INTEGER NOT NULL,
+            explanation TEXT,
+            points INTEGER DEFAULT 10,
+            difficulty TEXT DEFAULT 'medium',
+            category TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS quiz_answers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            visitor_id TEXT NOT NULL,
+            question_id INTEGER NOT NULL,
+            selected_index INTEGER NOT NULL,
+            is_correct INTEGER NOT NULL,
+            points_earned INTEGER DEFAULT 0,
+            answered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(visitor_id, question_id)
+        )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS quiz_points (
+            visitor_id TEXT PRIMARY KEY,
+            total_points INTEGER DEFAULT 0,
+            correct_count INTEGER DEFAULT 0,
+            total_count INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS quiz_redemptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            visitor_id TEXT NOT NULL,
+            item_id INTEGER NOT NULL,
+            points_cost INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (item_id) REFERENCES quiz_shop_items(id)
+        )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS quiz_shop_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            image_url TEXT,
+            points_cost INTEGER NOT NULL,
+            stock INTEGER DEFAULT 100,
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        db.run(`CREATE INDEX IF NOT EXISTS idx_quiz_answers_visitor ON quiz_answers(visitor_id)`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_quiz_answers_question ON quiz_answers(question_id)`);
+
         const salt = bcrypt.genSaltSync(10);
         const adminPassword = bcrypt.hashSync('admin123', salt);
         const editorPassword = bcrypt.hashSync('editor123', salt);
@@ -279,6 +335,60 @@ function insertSampleData() {
             });
         } else {
             console.log('食谱数据已存在, 跳过初始化');
+        }
+    });
+
+    insertQuizData();
+}
+
+function insertQuizData() {
+    const sampleQuestions = [
+        { question: '广陈皮的产地是哪里？', options: JSON.stringify(['江门市新会', '广州市', '肇庆市', '佛山市']), correct_index: 0, explanation: '广陈皮又称新会陈皮，产自广东省江门市新会区，是广东道地药材三宝之一。', points: 10, difficulty: 'easy', category: '产地' },
+        { question: '化橘红的主要功效是什么？', options: JSON.stringify(['清热解毒', '散寒燥湿，利气消痰', '补气安神', '活血化瘀']), correct_index: 1, explanation: '化橘红性辛、苦、温，归肺、脾经，具有散寒、燥湿、利气、消痰的功效。', points: 10, difficulty: 'easy', category: '功效' },
+        { question: '以下哪种药材被称为"南方人参"？', options: JSON.stringify(['五指毛桃', '绞股蓝', '金线莲', '灵芝']), correct_index: 1, explanation: '绞股蓝别名七叶胆、南方人参，具有清热、补虚、解毒的功效。', points: 10, difficulty: 'medium', category: '别名' },
+        { question: '巴戟天的性味是什么？', options: JSON.stringify(['甘、辛、微温', '苦、寒', '甘、平', '辛、热']), correct_index: 0, explanation: '巴戟天性甘、辛、微温，归肾、肝经，具有补肾阳、强筋骨、祛风湿的功效。', points: 10, difficulty: 'medium', category: '性味' },
+        { question: '何首乌的主要功效是什么？', options: JSON.stringify(['清热凉血', '补益精血，乌须发', '行气止痛', '健脾补肺']), correct_index: 1, explanation: '何首乌性苦、甘、涩、温，归肝、心、肾经，具有补益精血、乌须发、强筋骨的功效。', points: 10, difficulty: 'easy', category: '功效' },
+        { question: '春砂仁产自哪个城市？', options: JSON.stringify(['茂名市', '阳江市阳春', '肇庆市', '梅州市']), correct_index: 1, explanation: '春砂仁别名阳春砂，产自广东省阳江市阳春，是化湿开胃的要药。', points: 10, difficulty: 'easy', category: '产地' },
+        { question: '以下哪种药材归心、肺、肝、肾经？', options: JSON.stringify(['石斛', '灵芝', '化橘红', '陈皮']), correct_index: 1, explanation: '灵芝性甘、平，归心、肺、肝、肾经，具有补气安神、止咳平喘的功效。', points: 15, difficulty: 'medium', category: '归经' },
+        { question: '莞香的别名是什么？', options: JSON.stringify(['女儿香', '仙草', '鸡肠风', '地精']), correct_index: 0, explanation: '莞香别名女儿香，产自东莞市，是沉香的一种，具有行气止痛、温中止呕的功效。', points: 10, difficulty: 'medium', category: '别名' },
+        { question: '鱼腥草的性味是什么？', options: JSON.stringify(['甘、平', '辛、微寒', '苦、寒', '辛、温']), correct_index: 1, explanation: '鱼腥草性辛、微寒，归肺经，具有清热解毒、消痈排脓的功效。', points: 10, difficulty: 'medium', category: '性味' },
+        { question: '以下哪种药材产自汕尾市？', options: JSON.stringify(['高良姜', '海马', '佛手', '橄榄']), correct_index: 1, explanation: '海马产自广东省汕尾市，性甘、温，归肝、肾经，具有温肾壮阳、散结消肿的功效。', points: 10, difficulty: 'easy', category: '产地' },
+        { question: '石斛的主要功效是什么？', options: JSON.stringify(['清热利湿', '益胃生津，滋阴清热', '补气安神', '祛风通络']), correct_index: 1, explanation: '石斛性甘、微寒，归胃、肾经，具有益胃生津、滋阴清热的功效。', points: 10, difficulty: 'easy', category: '功效' },
+        { question: '梅片的别名是什么？', options: JSON.stringify(['梅花冰片、龙脑香', '鸡矢藤', '蛇舌草', '七叶胆']), correct_index: 0, explanation: '梅片别名梅花冰片、龙脑香，产自梅州市，具有开窍醒神、清热止痛的功效。', points: 15, difficulty: 'hard', category: '别名' },
+        { question: '木棉花的功效是什么？', options: JSON.stringify(['养阴润肺', '清热利湿，解毒止血', '疏肝理气', '温肾壮阳']), correct_index: 1, explanation: '木棉花性甘、淡、凉，归大肠经，具有清热、利湿、解毒、止血的功效。', points: 10, difficulty: 'medium', category: '功效' },
+        { question: '以下哪种药材产自潮州市？', options: JSON.stringify(['橘红', '佛手', '新会柑', '白花蛇舌草']), correct_index: 1, explanation: '佛手别名佛手柑、五指橘，产自广东省潮州市，具有疏肝理气、和胃止痛的功效。', points: 15, difficulty: 'medium', category: '产地' },
+        { question: '高良姜的性味是什么？', options: JSON.stringify(['甘、平', '辛、热', '苦、寒', '甘、凉']), correct_index: 1, explanation: '高良姜性辛、热，归脾、胃经，具有温胃散寒、消食止痛的功效。', points: 15, difficulty: 'hard', category: '性味' },
+        { question: '五指毛桃的主要功效是什么？', options: JSON.stringify(['清热解毒', '健脾补肺，行气利湿', '活血化瘀', '滋阴清热']), correct_index: 1, explanation: '五指毛桃性甘、平，归脾、胃、肺经，具有健脾补肺、行气利湿、舒筋活络的功效。', points: 10, difficulty: 'easy', category: '功效' },
+        { question: '金线莲的别名是什么？', options: JSON.stringify(['金线兰、鸟人参', '仙草', '女儿香', '蛇舌草']), correct_index: 0, explanation: '金线莲别名金线兰、鸟人参，产自河源市，具有清热凉血、祛风利湿的功效。', points: 15, difficulty: 'medium', category: '别名' },
+        { question: '沉香归哪些经？', options: JSON.stringify(['肺、脾', '脾、胃、肾', '心、肺', '肝、肾']), correct_index: 1, explanation: '沉香性辛、苦、微温，归脾、胃、肾经，具有行气止痛、温中止呕、纳气平喘的功效。', points: 15, difficulty: 'hard', category: '归经' },
+        { question: '以下哪种药材具有祛风通络的功效？', options: JSON.stringify(['金钱白花蛇', '百合', '玉竹', '杏仁']), correct_index: 0, explanation: '金钱白花蛇性甘、咸、温，归肝、脾经，具有祛风、通络、止痉的功效。', points: 15, difficulty: 'hard', category: '功效' },
+        { question: '鸡蛋花的性味是什么？', options: JSON.stringify(['甘、凉', '苦、寒', '辛、温', '甘、平']), correct_index: 0, explanation: '鸡蛋花性甘、凉，归肺、大肠经，具有清热、利湿、解暑的功效。', points: 10, difficulty: 'medium', category: '性味' }
+    ];
+
+    db.get('SELECT COUNT(*) as cnt FROM quiz_questions', (err, row) => {
+        if (row && row.cnt === 0) {
+            const stmt = db.prepare('INSERT INTO quiz_questions (question, options, correct_index, explanation, points, difficulty, category) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            sampleQuestions.forEach(q => stmt.run(q.question, q.options, q.correct_index, q.explanation, q.points, q.difficulty, q.category));
+            stmt.finalize(() => console.log('问答题库数据已插入，共' + sampleQuestions.length + '题'));
+        } else {
+            console.log('问答题库已存在, 跳过初始化');
+        }
+    });
+
+    const sampleShopItems = [
+        { name: '广陈皮香囊', description: '精选新会陈皮制作的芳香香囊，安神理气', image_url: '', points_cost: 100, stock: 50 },
+        { name: '中药标本套装', description: '含10种广东道地药材标本，附科普卡片', image_url: '', points_cost: 500, stock: 20 },
+        { name: '中医药文化帆布袋', description: '手绘中药材图案环保帆布袋', image_url: '', points_cost: 200, stock: 100 },
+        { name: '养生茶饮礼盒', description: '含五指毛桃、灵芝、石斛等养生茶包', image_url: '', points_cost: 800, stock: 15 },
+        { name: '中医经络图挂画', description: '精美人体经络穴位图，适合家居装饰', image_url: '', points_cost: 300, stock: 30 },
+        { name: '道地药材明信片', description: '12张手绘广东道地药材明信片套装', image_cost: 150, points_cost: 150, stock: 80 }
+    ];
+
+    db.get('SELECT COUNT(*) as cnt FROM quiz_shop_items', (err, row) => {
+        if (row && row.cnt === 0) {
+            const stmt = db.prepare('INSERT INTO quiz_shop_items (name, description, image_url, points_cost, stock) VALUES (?, ?, ?, ?, ?)');
+            sampleShopItems.forEach(item => stmt.run(item.name, item.description, item.image_url || '', item.points_cost, item.stock));
+            stmt.finalize(() => console.log('积分商城数据已插入'));
         }
     });
 }

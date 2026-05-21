@@ -29,6 +29,7 @@ const statsRoutes = require('./routes/stats');
 const likesRoutes = require('./routes/likes');
 const feedbackRoutes = require('./routes/feedback');
 const logsRoutes = require('./routes/logs');
+const quizRoutes = require('./routes/quiz');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -75,6 +76,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/likes', likesRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/quiz', quizRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({ 

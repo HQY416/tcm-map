@@ -1340,6 +1340,81 @@
             .fb-page-type-btn { padding: 6px 12px; font-size: 12px; }
             .fb-page-textarea { min-height: 6em; padding: 12px; font-size: 13px; }
         }
+        .quiz-container { padding: 16px; padding-bottom: 40px; max-width: 600px; margin: 0 auto; }
+        .quiz-tabs { display: flex; gap: 0; background: var(--bg-secondary); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+        .quiz-tab { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 10px; font-size: 14px; color: var(--text-light); cursor: pointer; transition: all 0.3s; font-weight: 500; }
+        .quiz-tab.active { background: var(--herb-green); color: white; box-shadow: 0 2px 8px rgba(76,175,80,0.3); }
+        .quiz-stats-bar { text-align: center; padding: 8px; font-size: 13px; color: var(--text-light); margin-bottom: 12px; }
+        .quiz-progress-bar { height: 4px; background: var(--bg-secondary); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+        .quiz-progress-fill { height: 100%; background: linear-gradient(90deg, var(--herb-green), #81C784); border-radius: 2px; transition: width 0.5s ease; }
+        .quiz-progress-text { text-align: center; font-size: 12px; color: var(--text-light); margin-bottom: 16px; }
+        .quiz-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .quiz-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .quiz-category { background: #E8F5E9; color: var(--herb-green); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .quiz-difficulty { color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+        .quiz-points { margin-left: auto; color: #FF9800; font-weight: 600; font-size: 14px; }
+        .quiz-question { font-size: 18px; line-height: 1.6; margin-bottom: 20px; color: var(--text-primary); }
+        .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .quiz-option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 2px solid #E0E0E0; border-radius: 12px; cursor: pointer; transition: all 0.3s; background: white; }
+        .quiz-option:hover { border-color: var(--herb-green); background: #F1F8E9; }
+        .quiz-option.selected { border-color: var(--herb-green); background: #E8F5E9; }
+        .quiz-option.correct { border-color: #4CAF50; background: #E8F5E9; }
+        .quiz-option.wrong { border-color: #F44336; background: #FFEBEE; }
+        .quiz-option.disabled { pointer-events: none; opacity: 0.8; }
+        .quiz-option.correct .option-letter { background: #4CAF50; color: white; }
+        .quiz-option.wrong .option-letter { background: #F44336; color: white; }
+        .option-letter { width: 28px; height: 28px; border-radius: 50%; background: #F5F5F5; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; transition: all 0.3s; }
+        .quiz-option.selected .option-letter { background: var(--herb-green); color: white; }
+        .option-text { font-size: 15px; color: var(--text-primary); line-height: 1.5; }
+        .quiz-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .quiz-btn.primary { background: linear-gradient(135deg, var(--herb-green), #66BB6A); color: white; box-shadow: 0 4px 12px rgba(76,175,80,0.3); }
+        .quiz-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(76,175,80,0.4); }
+        .quiz-btn.secondary { background: white; color: var(--herb-green); border: 2px solid var(--herb-green); margin-top: 10px; }
+        .quiz-feedback-area { margin-top: 16px; animation: fadeInUp 0.3s ease; }
+        .quiz-feedback { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 10px; margin-bottom: 10px; font-weight: 600; }
+        .quiz-feedback.correct { background: #E8F5E9; color: #2E7D32; }
+        .quiz-feedback.wrong { background: #FFEBEE; color: #C62828; }
+        .points-badge { background: #FF9800; color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; animation: bounceIn 0.5s ease; }
+        .quiz-explanation { background: #FFF8E1; padding: 14px 16px; border-radius: 10px; font-size: 14px; line-height: 1.6; color: #5D4037; border-left: 3px solid #FFB300; }
+        .quiz-result { text-align: center; padding: 40px 20px; }
+        .result-icon { font-size: 64px; margin-bottom: 16px; }
+        .result-title { font-size: 24px; margin-bottom: 24px; color: var(--text-primary); }
+        .result-stats { display: flex; justify-content: center; gap: 30px; margin-bottom: 30px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--herb-green); }
+        .stat-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+        .quiz-empty { text-align: center; padding: 40px 20px; color: var(--text-light); }
+        .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
+        .points-display { background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+        .shop-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: white; border-radius: 14px; margin-bottom: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
+        .shop-item-icon { font-size: 36px; width: 50px; text-align: center; flex-shrink: 0; }
+        .shop-item-info { flex: 1; min-width: 0; }
+        .shop-item-info h4 { font-size: 15px; margin: 0 0 4px; color: var(--text-primary); }
+        .shop-item-info p { font-size: 12px; color: var(--text-light); margin: 0 0 6px; line-height: 1.4; }
+        .shop-item-meta { display: flex; align-items: center; gap: 10px; }
+        .shop-points { color: #FF9800; font-weight: 600; font-size: 13px; }
+        .shop-stock { font-size: 11px; color: var(--text-light); }
+        .shop-stock.out { color: #F44336; }
+        .redeem-btn { padding: 8px 18px; border: none; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--herb-green); color: white; transition: all 0.3s; flex-shrink: 0; }
+        .redeem-btn.disabled { background: #E0E0E0; color: #9E9E9E; cursor: not-allowed; }
+        .redeem-btn:not(.disabled):hover { transform: scale(1.05); }
+        .history-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: white; border-radius: 10px; margin-bottom: 8px; }
+        .history-icon { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
+        .history-info { flex: 1; min-width: 0; }
+        .history-info h4 { font-size: 14px; margin: 0 0 2px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-info p { font-size: 11px; color: var(--text-light); margin: 0; }
+        .history-points { font-weight: 600; font-size: 14px; color: #4CAF50; flex-shrink: 0; }
+        @keyframes bounceIn { 0% { transform: scale(0); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 480px) {
+            .quiz-container { padding: 12px; }
+            .quiz-card { padding: 18px; }
+            .quiz-question { font-size: 16px; }
+            .quiz-option { padding: 12px 14px; }
+            .option-text { font-size: 14px; }
+            .result-stats { gap: 20px; }
+            .stat-value { font-size: 22px; }
+        }
     </style>
 </head>
 <body>
@@ -2548,6 +2623,7 @@
                         <span class="page-title title-font">道地药材 · 中华瑰宝</span>
                         <div class="nav-actions">
                             <button class="icon-btn" onclick="navigateToFeedback()" title="问题反馈">💬</button>
+                            <button class="icon-btn" onclick="navigateToQuiz()" title="知识问答">🧠</button>
                             <button class="icon-btn" onclick="navigateToRecipes()" title="食谱大全">🍲</button>
                         </div>
                     </div>
@@ -3576,6 +3652,7 @@
                 case 'search': content = renderNationalMap(); break;
                 case 'recipes': content = renderAllRecipes(); break;
                 case 'feedback': content = renderFeedbackPage(); break;
+                case 'qa': content = renderQAPage(); break;
             }
             app.innerHTML = content;
             if (currentState.level !== 'detail') {
@@ -3614,6 +3691,369 @@
             currentState = { ...currentState, level: 'recipes', herbId: '', searchQuery: '', searchResults: null, searchLoading: false };
             render();
             loadAllRecipes();
+        }
+
+        function navigateToQuiz() {
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+            currentState = { ...currentState, level: 'qa', herbId: '', searchQuery: '', searchResults: null, searchLoading: false };
+            render();
+            loadQuizData();
+        }
+
+        var quizState = {
+            questions: [],
+            currentIndex: 0,
+            selectedIndex: -1,
+            answered: false,
+            totalPoints: 0,
+            correctCount: 0,
+            totalCount: 0,
+            pointsHistory: [],
+            shopItems: [],
+            redemptions: [],
+            quizTab: 'quiz'
+        };
+
+        function getQuizVisitorId() {
+            var id = localStorage.getItem('quiz_visitor_id');
+            if (!id) {
+                id = 'quiz_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('quiz_visitor_id', id);
+            }
+            return id;
+        }
+
+        function loadQuizData() {
+            var vid = getQuizVisitorId();
+            var xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '/api/quiz/questions?visitor_id=' + vid);
+            xhr1.onload = function() {
+                if (xhr1.status === 200) {
+                    var res = JSON.parse(xhr1.responseText);
+                    if (res.success) {
+                        quizState.questions = res.data;
+                        quizState.currentIndex = 0;
+                        quizState.selectedIndex = -1;
+                        quizState.answered = false;
+                        updateQuizUI();
+                    }
+                }
+            };
+            xhr1.send();
+
+            var xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '/api/quiz/points?visitor_id=' + vid);
+            xhr2.onload = function() {
+                if (xhr2.status === 200) {
+                    var res = JSON.parse(xhr2.responseText);
+                    if (res.success && res.data) {
+                        quizState.totalPoints = res.data.total_points || 0;
+                        quizState.correctCount = res.data.correct_count || 0;
+                        quizState.totalCount = res.data.total_count || 0;
+                        updateQuizPointsUI();
+                    }
+                }
+            };
+            xhr2.send();
+
+            loadShopItems();
+        }
+
+        function loadShopItems() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/quiz/shop');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        quizState.shopItems = res.data;
+                        updateShopUI();
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        function loadQuizHistory() {
+            var vid = getQuizVisitorId();
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/quiz/history?visitor_id=' + vid);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        quizState.pointsHistory = res.data;
+                        updateHistoryUI();
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        function loadRedemptions() {
+            var vid = getQuizVisitorId();
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/quiz/redemptions?visitor_id=' + vid);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        quizState.redemptions = res.data;
+                        updateRedemptionsUI();
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        function selectQuizOption(index) {
+            if (quizState.answered) return;
+            quizState.selectedIndex = index;
+            var options = document.querySelectorAll('.quiz-option');
+            options.forEach(function(opt, i) {
+                opt.classList.toggle('selected', i === index);
+            });
+        }
+
+        function submitQuizAnswer() {
+            if (quizState.answered || quizState.selectedIndex === -1) return;
+            if (quizState.questions.length === 0) return;
+            var question = quizState.questions[quizState.currentIndex];
+            var vid = getQuizVisitorId();
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/quiz/answer');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('x-visitor-id', vid);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        quizState.answered = true;
+                        var data = res.data;
+                        var options = document.querySelectorAll('.quiz-option');
+                        options.forEach(function(opt, i) {
+                            if (i === data.correct_index) opt.classList.add('correct');
+                            else if (i === quizState.selectedIndex && !data.is_correct) opt.classList.add('wrong');
+                            opt.classList.add('disabled');
+                        });
+                        var feedbackEl = document.getElementById('quiz-feedback');
+                        if (feedbackEl) {
+                            feedbackEl.innerHTML = '<div class="quiz-feedback ' + (data.is_correct ? 'correct' : 'wrong') + '">' +
+                                '<span>' + (data.is_correct ? '✅ 回答正确！' : '❌ 回答错误') + '</span>' +
+                                (data.is_correct ? '<span class="points-badge">+' + data.points_earned + '积分</span>' : '') +
+                                '</div>' +
+                                '<div class="quiz-explanation">📖 ' + data.explanation + '</div>';
+                            feedbackEl.style.display = 'block';
+                        }
+                        if (data.is_correct) {
+                            quizState.totalPoints += data.points_earned;
+                            quizState.correctCount++;
+                        }
+                        quizState.totalCount++;
+                        updateQuizPointsUI();
+                        var nextBtn = document.getElementById('quiz-next-btn');
+                        if (nextBtn) nextBtn.style.display = 'flex';
+                    } else {
+                        showCommentToast(res.message || '提交失败');
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({ question_id: question.id, selected_index: quizState.selectedIndex }));
+        }
+
+        function nextQuizQuestion() {
+            quizState.currentIndex++;
+            quizState.selectedIndex = -1;
+            quizState.answered = false;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                showQuizResult();
+            } else {
+                updateQuizUI();
+            }
+        }
+
+        function showQuizResult() {
+            var container = document.getElementById('quiz-content');
+            if (!container) return;
+            var accuracy = quizState.totalCount > 0 ? Math.round(quizState.correctCount / quizState.totalCount * 100) : 0;
+            container.innerHTML = '<div class="quiz-result">' +
+                '<div class="result-icon">' + (accuracy >= 60 ? '🎉' : '💪') + '</div>' +
+                '<h3 class="result-title title-font">答题完成！</h3>' +
+                '<div class="result-stats">' +
+                '<div class="stat-item"><div class="stat-value">' + quizState.totalPoints + '</div><div class="stat-label">总积分</div></div>' +
+                '<div class="stat-item"><div class="stat-value">' + quizState.correctCount + '/' + quizState.totalCount + '</div><div class="stat-label">正确率 ' + accuracy + '%</div></div>' +
+                '</div>' +
+                '<button class="quiz-btn primary" onclick="restartQuiz()">再答一轮</button>' +
+                '<button class="quiz-btn secondary" onclick="switchQuizTab(\'shop\')">去兑换商城</button>' +
+                '</div>';
+        }
+
+        function restartQuiz() {
+            quizState.currentIndex = 0;
+            quizState.selectedIndex = -1;
+            quizState.answered = false;
+            var vid = getQuizVisitorId();
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/quiz/questions?visitor_id=' + vid);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        quizState.questions = res.data;
+                        updateQuizUI();
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        function switchQuizTab(tab) {
+            quizState.quizTab = tab;
+            var tabs = document.querySelectorAll('.quiz-tab');
+            tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
+            var panels = document.querySelectorAll('.quiz-panel');
+            panels.forEach(function(p) { p.style.display = p.dataset.panel === tab ? 'block' : 'none'; });
+            if (tab === 'shop') loadShopItems();
+            if (tab === 'history') { loadQuizHistory(); loadRedemptions(); }
+        }
+
+        function redeemItem(itemId) {
+            var vid = getQuizVisitorId();
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/quiz/redeem');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('x-visitor-id', vid);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        showCommentToast('🎉 ' + res.message);
+                        quizState.totalPoints -= res.data.points_cost;
+                        updateQuizPointsUI();
+                        loadShopItems();
+                    } else {
+                        showCommentToast(res.message || '兑换失败');
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({ item_id: itemId }));
+        }
+
+        function updateQuizUI() {
+            var container = document.getElementById('quiz-content');
+            if (!container || quizState.questions.length === 0) {
+                if (container) container.innerHTML = '<div class="quiz-empty"><span class="empty-icon">🏆</span><p>你已经答完所有题目了！</p><p>继续探索中医药知识，更多题目即将上线</p></div>';
+                return;
+            }
+            var q = quizState.questions[quizState.currentIndex];
+            var progress = ((quizState.currentIndex) / quizState.questions.length * 100);
+            var diffLabel = { easy: '简单', medium: '中等', hard: '困难' };
+            var diffColor = { easy: '#4CAF50', medium: '#FF9800', hard: '#F44336' };
+            var html = '<div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:' + progress + '%"></div></div>' +
+                '<div class="quiz-progress-text">第 ' + (quizState.currentIndex + 1) + ' / ' + quizState.questions.length + ' 题</div>' +
+                '<div class="quiz-card">' +
+                '<div class="quiz-card-header"><span class="quiz-category">' + q.category + '</span><span class="quiz-difficulty" style="background:' + diffColor[q.difficulty] + '">' + diffLabel[q.difficulty] + '</span><span class="quiz-points">+' + q.points + '</span></div>' +
+                '<h3 class="quiz-question title-font">' + q.question + '</h3>' +
+                '<div class="quiz-options">';
+            q.options.forEach(function(opt, i) {
+                var letters = ['A', 'B', 'C', 'D'];
+                html += '<div class="quiz-option" onclick="selectQuizOption(' + i + ')"><span class="option-letter">' + letters[i] + '</span><span class="option-text">' + opt + '</span></div>';
+            });
+            html += '</div>' +
+                '<button class="quiz-btn primary" onclick="submitQuizAnswer()" id="quiz-submit-btn">确认答案</button>' +
+                '<div class="quiz-feedback-area" id="quiz-feedback" style="display:none"></div>' +
+                '<button class="quiz-btn primary" onclick="nextQuizQuestion()" id="quiz-next-btn" style="display:none">下一题 →</button>' +
+                '</div>';
+            container.innerHTML = html;
+        }
+
+        function updateQuizPointsUI() {
+            var el = document.getElementById('quiz-points-display');
+            if (el) el.textContent = quizState.totalPoints;
+            var el2 = document.getElementById('quiz-accuracy-display');
+            if (el2) {
+                var acc = quizState.totalCount > 0 ? Math.round(quizState.correctCount / quizState.totalCount * 100) : 0;
+                el2.textContent = quizState.correctCount + '/' + quizState.totalCount + ' (' + acc + '%)';
+            }
+        }
+
+        function updateShopUI() {
+            var container = document.getElementById('shop-content');
+            if (!container) return;
+            if (quizState.shopItems.length === 0) {
+                container.innerHTML = '<div class="quiz-empty"><span class="empty-icon">🛍️</span><p>商城商品即将上线</p></div>';
+                return;
+            }
+            var html = '';
+            quizState.shopItems.forEach(function(item) {
+                var canRedeem = quizState.totalPoints >= item.points_cost && item.stock > 0;
+                html += '<div class="shop-item">' +
+                    '<div class="shop-item-icon">' + (item.name.includes('陈皮') ? '🫙' : item.name.includes('标本') ? '🔬' : item.name.includes('帆布') ? '👜' : item.name.includes('茶') ? '🍵' : item.name.includes('经络') ? '🖼️' : '📬') + '</div>' +
+                    '<div class="shop-item-info"><h4>' + item.name + '</h4><p>' + item.description + '</p><div class="shop-item-meta"><span class="shop-points">🪙 ' + item.points_cost + '积分</span><span class="shop-stock' + (item.stock <= 0 ? ' out' : '') + '">' + (item.stock > 0 ? '库存 ' + item.stock : '已售罄') + '</span></div></div>' +
+                    '<button class="redeem-btn' + (canRedeem ? '' : ' disabled') + '" onclick="' + (canRedeem ? 'redeemItem(' + item.id + ')' : '') + '">' + (canRedeem ? '兑换' : (item.stock <= 0 ? '售罄' : '不足')) + '</button>' +
+                    '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function updateHistoryUI() {
+            var container = document.getElementById('history-content');
+            if (!container) return;
+            if (quizState.pointsHistory.length === 0) {
+                container.innerHTML = '<div class="quiz-empty"><span class="empty-icon">📝</span><p>还没有答题记录</p></div>';
+                return;
+            }
+            var html = '';
+            quizState.pointsHistory.forEach(function(h) {
+                html += '<div class="history-item">' +
+                    '<div class="history-icon ' + (h.is_correct ? 'correct' : 'wrong') + '">' + (h.is_correct ? '✅' : '❌') + '</div>' +
+                    '<div class="history-info"><h4>' + h.question + '</h4><p>' + h.category + ' · ' + h.difficulty + '</p></div>' +
+                    '<div class="history-points">' + (h.points_earned > 0 ? '+' + h.points_earned : '0') + '</div>' +
+                    '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function updateRedemptionsUI() {
+            var container = document.getElementById('redemptions-content');
+            if (!container) return;
+            if (quizState.redemptions.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#8E8E8E;padding:20px">暂无兑换记录</p>';
+                return;
+            }
+            var html = '';
+            quizState.redemptions.forEach(function(r) {
+                html += '<div class="history-item">' +
+                    '<div class="history-icon">🎁</div>' +
+                    '<div class="history-info"><h4>' + r.item_name + '</h4><p>' + r.status + ' · -' + r.points_cost + '积分</p></div>' +
+                    '<div class="history-points" style="color:#F44336">-' + r.points_cost + '</div>' +
+                    '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function renderQAPage() {
+            return '<div class="top-nav">' +
+                '<div class="nav-header">' +
+                '<button class="icon-btn" onclick="navigateBack()" title="返回">←</button>' +
+                '<span class="page-title title-font">🧠 中药知识问答</span>' +
+                '<div class="nav-actions"><span class="points-display">🪙 <span id="quiz-points-display">' + quizState.totalPoints + '</span></span></div>' +
+                '</div></div>' +
+                '<div class="quiz-container">' +
+                '<div class="quiz-tabs">' +
+                '<button class="quiz-tab active" data-tab="quiz" onclick="switchQuizTab(\'quiz\')">答题</button>' +
+                '<button class="quiz-tab" data-tab="shop" onclick="switchQuizTab(\'shop\')">兑换商城</button>' +
+                '<button class="quiz-tab" data-tab="history" onclick="switchQuizTab(\'history\')">记录</button>' +
+                '</div>' +
+                '<div class="quiz-stats-bar"><span>正确率: <span id="quiz-accuracy-display">' + quizState.correctCount + '/' + quizState.totalCount + '</span></span></div>' +
+                '<div class="quiz-panel" data-panel="quiz" id="quiz-content"></div>' +
+                '<div class="quiz-panel" data-panel="shop" id="shop-content" style="display:none"></div>' +
+                '<div class="quiz-panel" data-panel="history" id="history-content" style="display:none">' +
+                '<h4 style="padding:10px 0;color:var(--herb-green)">答题记录</h4><div id="history-list"></div>' +
+                '<h4 style="padding:15px 0 10px;color:var(--herb-green)">兑换记录</h4><div id="redemptions-content"></div>' +
+                '</div>' +
+                '</div>';
         }
 
         var allRecipesCache = [];
@@ -3783,6 +4223,7 @@
                 case 'search': currentState.level = 'national'; currentState.searchQuery = ''; currentState.searchResults = null; render(); break;
                 case 'recipes': navigateToNational(); break;
                 case 'feedback': navigateToNational(); break;
+                case 'qa': navigateToNational(); break;
             }
         }
 
