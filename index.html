@@ -2830,12 +2830,28 @@
         var currentCommentHerbId = null;
 
         function getVisitorId() {
-            var vid = localStorage.getItem('visitor_id');
-            if (!vid) {
-                vid = 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('visitor_id', vid);
-            }
-            return vid;
+            // 修复:visitor_id 改为由服务端签发(带 HMAC 签名),客户端不再自行生成随机值
+            // 没有签名 id 时返回空字符串,本次请求可能被后端拒绝,ensureVisitorId 会异步补全
+            return localStorage.getItem('visitor_id') || '';
+        }
+
+        // 异步向服务端请求签名的 visitor_id 并缓存,页面加载时调用一次
+        function ensureVisitorId() {
+            var existing = localStorage.getItem('visitor_id');
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/visitor/issue', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        if (res.success && res.data && res.data.visitor_id) {
+                            localStorage.setItem('visitor_id', res.data.visitor_id);
+                        }
+                    } catch(e) {}
+                }
+            };
+            xhr.send(JSON.stringify({ visitor_id: existing || '' }));
         }
 
         function trackPageView(pageType, pageId) {
@@ -2896,6 +2912,7 @@
             if (liked) {
                 xhr.open('DELETE', '/api/likes', true);
                 xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-Visitor-Id', getVisitorId());
                 xhr.onload = function() {
                     if (btn) btn.disabled = false;
                     if (xhr.status === 200) {
@@ -2917,6 +2934,7 @@
             } else {
                 xhr.open('POST', '/api/likes', true);
                 xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-Visitor-Id', getVisitorId());
                 xhr.onload = function() {
                     if (btn) btn.disabled = false;
                     if (xhr.status === 200) {
@@ -2927,6 +2945,11 @@
                                 if (btn) btn.classList.add('liked');
                                 if (icon) icon.textContent = '❤️';
                                 if (countEl && resp.data) countEl.textContent = resp.data.count;
+                            } else if (resp.code === 'INVALID_VISITOR') {
+                                // visitor_id 未就绪,触发补全后提示用户重试
+                                ensureVisitorId();
+                                if (btn) { /* keep disabled to avoid spam */ }
+                                alert('正在初始化访客标识,请稍后重试');
                             }
                         } catch(e) {}
                     }
@@ -3715,12 +3738,8 @@
         };
 
         function getQuizVisitorId() {
-            var id = localStorage.getItem('quiz_visitor_id');
-            if (!id) {
-                id = 'quiz_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-                localStorage.setItem('quiz_visitor_id', id);
-            }
-            return id;
+            // 修复:quiz 统一使用服务端签名的 visitor_id,与点赞等模块一致,防止伪造身份刷积分
+            return getVisitorId();
         }
 
         function loadQuizData() {
@@ -4247,6 +4266,8 @@
             else { currentState.favoriteHerbs.push(herbId); btn.classList.add('active'); btn.innerHTML = '♥'; }
         }
 
+        // 修复:页面加载时向服务端请求带签名的 visitor_id,供点赞/答题/兑换等写操作使用
+        ensureVisitorId();
         preloadHerbImages();
         render();
     </script>

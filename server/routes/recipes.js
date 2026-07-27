@@ -1,6 +1,7 @@
 const express = require('express');
 const { Recipe } = require('../models');
 const { authenticateToken, checkOwnership } = require('../middleware/auth');
+const db = require('../init-db');
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -28,7 +29,6 @@ router.get('/:id/herbs', (req, res) => {
 router.put('/:id/herbs', authenticateToken, checkOwnership('recipe'), (req, res) => {
     const recipeId = req.params.id;
     const herbIds = req.body.herb_ids || [];
-    const db = require('../init-db');
     db.run('DELETE FROM herb_recipe_relation WHERE recipe_id = ?', [recipeId], (err) => {
         if (err) return res.json({ success: false, message: err.message });
         if (herbIds.length === 0) return res.json({ success: true, message: '关联更新成功' });
@@ -55,9 +55,9 @@ router.get('/:id', (req, res) => {
 
 router.post('/', authenticateToken, (req, res) => {
     const data = { ...req.body, creator_id: req.user.id };
-    Recipe.create(data, function(err) {
+    Recipe.create(data, function(err, result) {
         if (err) res.json({ success: false, message: err.message });
-        else res.json({ success: true, message: '创建成功', id: this.lastID });
+        else res.json({ success: true, message: '创建成功', id: result.lastID });
     });
 });
 
@@ -69,9 +69,7 @@ router.put('/:id', authenticateToken, checkOwnership('recipe'), (req, res) => {
 });
 
 router.patch('/:id/publish', authenticateToken, checkOwnership('recipe'), (req, res) => {
-    const sqlite3 = require('sqlite3').verbose();
-    const path = require('path');
-    const db = new sqlite3.Database(path.join(__dirname, '..', 'data', 'herbmap.db'));
+    // 修复:复用全局 db 实例,避免每次请求新建连接导致句柄泄漏
     db.run('UPDATE recipes SET is_published = NOT is_published WHERE id = ?', [req.params.id], function(err) {
         if (err) res.json({ success: false, message: err.message });
         else res.json({ success: true, message: '状态更新成功' });

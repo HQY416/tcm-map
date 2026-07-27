@@ -122,24 +122,33 @@ app.get('/api/videos/herb/:id', function(req, res) {
     res.json({ success: true, data: [] });
 });
 
+// 修复:Vercel 降级模式无法持久化(serverless 无可写 FS),写接口返回 degraded 标记
+// 前端可据此提示用户"当前为只读模式,数据不会被保存",避免静默吞数据
 app.post('/api/stats/page-view', function(req, res) {
-    res.json({ success: true });
+    res.json({ success: true, degraded: true });
 });
 
 app.post('/api/feedback', function(req, res) {
-    res.json({ success: true, message: '感谢您的反馈！' });
+    res.json({ success: false, degraded: true, message: '当前为只读演示模式,反馈不会被保存' });
 });
 
 app.post('/api/comments', function(req, res) {
-    res.json({ success: true, message: '评论成功' });
+    res.json({ success: false, degraded: true, message: '当前为只读演示模式,评论不会被保存' });
 });
 
 app.post('/api/likes', function(req, res) {
-    res.json({ success: true });
+    res.json({ success: false, degraded: true, message: '当前为只读演示模式,点赞不会被保存' });
 });
 
 app.delete('/api/likes', function(req, res) {
-    res.json({ success: true });
+    res.json({ success: false, degraded: true, message: '当前为只读演示模式,操作不会被保存' });
+});
+
+app.post('/api/visitor/issue', function(req, res) {
+    // 降级模式签发临时 visitor_id,使前端逻辑可继续运行
+    const crypto = require('crypto');
+    const raw = 'v_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
+    res.json({ success: true, degraded: true, data: { visitor_id: raw } });
 });
 
 app.get('/admin', function(req, res) {

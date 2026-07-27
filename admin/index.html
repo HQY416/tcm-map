@@ -1416,7 +1416,8 @@
                     baseURL: '/api'
                 });
                 api.interceptors.request.use(function(config) {
-                    var t = localStorage.getItem('token') || token.value;
+                    // 修复:统一 token 存储 key 为 herb_token,避免刷新后丢失鉴权
+                    var t = localStorage.getItem('herb_token') || token.value;
                     if (t) config.headers.Authorization = 'Bearer ' + t;
                     return config;
                 });

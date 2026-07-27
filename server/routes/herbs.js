@@ -61,6 +61,7 @@ var herbImageUpload = multer({
 router.get('/', function(req, res) {
     Herb.findAll(function(err, herbs) {
         if (err) return res.json({ success: false, message: err.message });
+        // 修复:读接口不再触发 UPDATE,仅临时回填内存中的展示图片,避免高并发写放大与违反 REST 语义
         var herbsWithoutImage = herbs.filter(function(h) { return !h.image_url; });
         if (herbsWithoutImage.length === 0) {
             return res.json({ success: true, data: herbs });
@@ -70,7 +71,6 @@ router.get('/', function(req, res) {
             HerbImage.findByHerbId(herb.id, function(imgErr, images) {
                 if (!imgErr && images && images.length > 0) {
                     herb.image_url = images[0].image_url;
-                    db.run('UPDATE herbs SET image_url = ? WHERE id = ?', [images[0].image_url, herb.id], function() {});
                 }
                 if (--pending === 0) {
                     res.json({ success: true, data: herbs });
@@ -253,9 +253,9 @@ router.get('/:id', function(req, res) {
         if (!herb) return res.json({ success: false, message: '药材不存在' });
         if (!herb.image_url) {
             HerbImage.findByHerbId(herb.id, function(imgErr, images) {
+                // 修复:读接口不再触发 UPDATE,仅临时回填展示图片
                 if (!imgErr && images && images.length > 0) {
                     herb.image_url = images[0].image_url;
-                    db.run('UPDATE herbs SET image_url = ? WHERE id = ?', [images[0].image_url, herb.id], function() {});
                 }
                 res.json({ success: true, data: herb });
             });
@@ -269,7 +269,7 @@ router.post('/', authenticateToken, function(req, res) {
     var data = Object.assign({}, req.body, { creator_id: req.user.id });
     Herb.create(data, function(err, result) {
         if (err) res.json({ success: false, message: err.message });
-        else res.json({ success: true, message: '创建成功', id: this.lastID });
+        else res.json({ success: true, message: '创建成功', id: result.lastID });
     });
 });
 

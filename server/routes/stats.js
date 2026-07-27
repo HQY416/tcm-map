@@ -44,13 +44,13 @@ router.get('/comments', authenticateToken, (req, res) => {
             dateFormat = "%Y-%m-%d";
     }
 
-    const sql = `SELECT strftime('${dateFormat}', created_at) as date, COUNT(*) as count
+    const sql = `SELECT strftime(?, created_at) as date, COUNT(*) as count
                  FROM comments
-                 WHERE created_at >= datetime('now', '-${days} days')
+                 WHERE created_at >= datetime('now', ?)
                  GROUP BY date
                  ORDER BY date DESC`;
 
-    db.all(sql, (err, rows) => {
+    db.all(sql, [dateFormat, '-' + days + ' days'], (err, rows) => {
         if (err) {
             return res.json({ success: false, message: '获取评论统计失败' });
         }
@@ -74,15 +74,15 @@ router.get('/page-views', authenticateToken, (req, res) => {
             dateFormat = "%Y-%m-%d";
     }
 
-    const sql = `SELECT strftime('${dateFormat}', created_at) as date,
+    const sql = `SELECT strftime(?, created_at) as date,
                         COUNT(*) as count,
                         COUNT(DISTINCT visitor_id) as unique_visitors
                  FROM page_views
-                 WHERE created_at >= datetime('now', '-${days} days')
+                 WHERE created_at >= datetime('now', ?)
                  GROUP BY date
                  ORDER BY date DESC`;
 
-    db.all(sql, (err, rows) => {
+    db.all(sql, [dateFormat, '-' + days + ' days'], (err, rows) => {
         if (err) {
             return res.json({ success: false, message: '获取浏览量统计失败' });
         }

@@ -1,11 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../init-db');
+const { verifyVisitorId } = require('../middleware/auth');
+
+// 验证 visitor_id 签名,无效返回 null
+function getVerifiedVisitorId(req) {
+    const raw = req.headers['x-visitor-id'] || req.query.visitor_id || req.body.visitor_id;
+    return verifyVisitorId(raw);
+}
 
 router.post('/', (req, res) => {
-    const { target_type, target_id, visitor_id } = req.body;
+    const { target_type, target_id } = req.body;
+    // 修复:visitor_id 必须为服务端签发,防止冒充他人点赞/取消
+    const visitor_id = getVerifiedVisitorId(req);
+    if (!visitor_id) {
+        return res.json({ success: false, code: 'INVALID_VISITOR', message: '访客标识无效,请刷新页面重试' });
+    }
 
-    if (!target_type || !target_id || !visitor_id) {
+    if (!target_type || !target_id) {
         return res.json({ success: false, message: '缺少必要参数' });
     }
 
@@ -31,9 +43,13 @@ router.post('/', (req, res) => {
 });
 
 router.delete('/', (req, res) => {
-    const { target_type, target_id, visitor_id } = req.body;
+    const { target_type, target_id } = req.body;
+    const visitor_id = getVerifiedVisitorId(req);
+    if (!visitor_id) {
+        return res.json({ success: false, code: 'INVALID_VISITOR', message: '访客标识无效,请刷新页面重试' });
+    }
 
-    if (!target_type || !target_id || !visitor_id) {
+    if (!target_type || !target_id) {
         return res.json({ success: false, message: '缺少必要参数' });
     }
 
@@ -94,7 +110,7 @@ router.get('/batch/:target_type', (req, res) => {
         if (err) {
             return res.json({ success: false, message: '获取点赞数失败' });
         }
-        var result = {};
+        const result = {};
         (rows || []).forEach(function(row) {
             result[row.target_id] = row.count;
         });

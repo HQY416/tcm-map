@@ -12,6 +12,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.error('数据库连接失败:', err.message);
     } else {
         console.log('已连接到SQLite数据库');
+        // 启用外键约束,使 ON DELETE CASCADE 等外键行为生效
+        db.run('PRAGMA foreign_keys = ON');
         initTables();
     }
 });
@@ -93,9 +95,10 @@ function initTables() {
             FOREIGN KEY (herb_id) REFERENCES herbs(id)
         )`);
 
+        // 修复:herb_id 类型改为 INTEGER,与 herbs.id 一致,便于索引与 JOIN
         db.run(`CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            herb_id TEXT NOT NULL,
+            herb_id INTEGER NOT NULL,
             nickname TEXT NOT NULL,
             content TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -204,16 +207,7 @@ function initTables() {
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
 
-        db.run(`CREATE TABLE IF NOT EXISTS quiz_redemptions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            visitor_id TEXT NOT NULL,
-            item_id INTEGER NOT NULL,
-            points_cost INTEGER NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (item_id) REFERENCES quiz_shop_items(id)
-        )`);
-
+        // 修复:先建被引用表 quiz_shop_items,再建 quiz_redemptions,保证外键引用顺序
         db.run(`CREATE TABLE IF NOT EXISTS quiz_shop_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -225,22 +219,38 @@ function initTables() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
 
+        db.run(`CREATE TABLE IF NOT EXISTS quiz_redemptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            visitor_id TEXT NOT NULL,
+            item_id INTEGER NOT NULL,
+            points_cost INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (item_id) REFERENCES quiz_shop_items(id)
+        )`);
+
         db.run(`CREATE INDEX IF NOT EXISTS idx_quiz_answers_visitor ON quiz_answers(visitor_id)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_quiz_answers_question ON quiz_answers(question_id)`);
 
+        // 默认账号密码支持环境变量覆盖;未设置时回退到默认值(仅适合开发环境)
+        const adminUser = process.env.ADMIN_USERNAME || 'admin';
+        const adminPwd = process.env.ADMIN_PASSWORD || 'admin123';
+        const editorUser = process.env.EDITOR_USERNAME || 'editor';
+        const editorPwd = process.env.EDITOR_PASSWORD || 'editor123';
+
         const salt = bcrypt.genSaltSync(10);
-        const adminPassword = bcrypt.hashSync('admin123', salt);
-        const editorPassword = bcrypt.hashSync('editor123', salt);
-        
-        db.run(`INSERT OR IGNORE INTO users (username, password, role) VALUES 
-            ('admin', ?, 'admin'),
-            ('editor', ?, 'editor')`, 
-            [adminPassword, editorPassword], (err) => {
-            if (!err) {
-                console.log('默认用户已初始化 (admin/admin123, editor/editor123)');
-            }
-            insertSampleData();
-        });
+        const adminPassword = bcrypt.hashSync(adminPwd, salt);
+        const editorPassword = bcrypt.hashSync(editorPwd, salt);
+
+        db.run(`INSERT OR IGNORE INTO users (username, password, role) VALUES
+            (?, ?, 'admin'),
+            (?, ?, 'editor')`,
+            [adminUser, adminPassword, editorUser, editorPassword], (err) => {
+                if (!err) {
+                    console.log('默认用户已初始化 (' + adminUser + '/' + (adminPwd === 'admin123' ? 'admin123(默认)' : '已通过环境变量设置') + ')');
+                }
+                insertSampleData();
+            });
     });
 }
 
@@ -282,23 +292,6 @@ function insertSampleData() {
         { name: '五指毛桃(梅州)', alias: '鸡矢藤', origin: '梅州市', nature: '甘、平', meridian: '脾、胃、肺', efficacy: '健脾补肺，行气利湿', indication: '脾虚浮肿，食少无力，肺痨咳嗽', creator_id: 1, image_url: '/uploads/herbs/herb_1779018469777_qglqnt.jpg' }
     ];
 
-    db.get('SELECT COUNT(*) as cnt FROM herbs', (err, row) => {
-        if (row && row.cnt === 0) {
-            const stmt = db.prepare(`INSERT OR IGNORE INTO herbs 
-                (name, alias, origin, nature, meridian, efficacy, indication, creator_id, image_url) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-            sampleHerbs.forEach(h => stmt.run(h.name, h.alias, h.origin, h.nature, h.meridian, h.efficacy, h.indication, h.creator_id, h.image_url || null));
-            stmt.finalize(() => {
-                console.log('示例药材数据已插入');
-                insertHerbImages();
-                rebuildSearchIndex();
-            });
-        } else {
-            console.log('药材数据已存在, 修复缺失图片...');
-            fixMissingImages(sampleHerbs);
-        }
-    });
-
     const sampleRecipes = [
         { title: '五指毛桃煲鸡汤', content: '<p><strong>材料：</strong>五指毛桃50g，鸡一只，瘦肉200g<br><strong>做法：</strong>材料洗净后放入汤锅，加水适量，大火烧开后转小火煲2小时调味即可。</p>', ingredients: JSON.stringify(['五指毛桃50g', '土鸡1只', '瘦肉200g', '姜片3片', '蜜枣2粒']), efficacy: '健脾祛湿，益气补虚', creator_id: 1, is_published: 1, herb_ids: [1, 13] },
         { title: '广陈皮普洱茶', content: '<p><strong>材料：</strong>广陈皮一瓣，普洱茶适量<br><strong>做法：</strong>陈皮冲洗后加入开水洗茶一遍，第二泡即可饮用。</p>', ingredients: JSON.stringify(['广陈皮一瓣', '普洱茶5克', '开水']), efficacy: '理气健脾，燥湿化痰', creator_id: 1, is_published: 1, herb_ids: [7, 21] },
@@ -308,37 +301,65 @@ function insertSampleData() {
         { title: '木棉花祛湿粥', content: '<p><strong>材料：</strong>干木棉花20g，薏米30g，扁豆30g，大米100g<br><strong>做法：</strong>木棉花洗净煎水去渣，用药汁与薏米、扁豆、大米同煮成粥。</p>', ingredients: JSON.stringify(['干木棉花20g', '薏米30g', '扁豆30g', '大米100g']), efficacy: '清热利湿，健脾祛湿', creator_id: 1, is_published: 1, herb_ids: [14] }
     ];
 
-    db.get('SELECT COUNT(*) as cnt FROM recipes', (err, row) => {
-        if (row && row.cnt === 0) {
-            const recipeStmt = db.prepare(`INSERT OR IGNORE INTO recipes 
-                (title, content, ingredients, efficacy, creator_id, is_published) 
-                VALUES (?, ?, ?, ?, ?, ?)`);
-            sampleRecipes.forEach(r => recipeStmt.run(r.title, r.content, r.ingredients, r.efficacy, r.creator_id, r.is_published));
-            recipeStmt.finalize(() => {
-                console.log('示例食谱数据已插入');
-                db.get('SELECT COUNT(*) as cnt FROM herb_recipe_relation', (err2, row2) => {
-                    if (row2 && row2.cnt === 0) {
-                        db.all('SELECT id, title FROM recipes', [], (err3, recipes) => {
-                            if (err3 || !recipes) return;
-                            const titleToId = {};
-                            recipes.forEach(r => { titleToId[r.title] = r.id; });
-                            const relStmt = db.prepare('INSERT OR IGNORE INTO herb_recipe_relation (herb_id, recipe_id) VALUES (?, ?)');
-                            sampleRecipes.forEach(sr => {
-                                if (sr.herb_ids && titleToId[sr.title]) {
-                                    sr.herb_ids.forEach(hid => relStmt.run(hid, titleToId[sr.title]));
-                                }
-                            });
-                            relStmt.finalize(() => console.log('食谱-药材关联已建立'));
-                        });
-                    }
+    // 修复:用显式回调链保证顺序 herbs -> herb_images -> recipes -> herb_recipe_relation -> quiz
+    // 避免启用外键后,关联表在主表插入完成前写入导致 FOREIGN KEY 约束失败
+    function insertHerbs(done) {
+        db.get('SELECT COUNT(*) as cnt FROM herbs', (err, row) => {
+            if (row && row.cnt === 0) {
+                const stmt = db.prepare(`INSERT OR IGNORE INTO herbs
+                    (name, alias, origin, nature, meridian, efficacy, indication, creator_id, image_url)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+                sampleHerbs.forEach(h => stmt.run(h.name, h.alias, h.origin, h.nature, h.meridian, h.efficacy, h.indication, h.creator_id, h.image_url || null));
+                stmt.finalize(() => {
+                    console.log('示例药材数据已插入');
+                    rebuildSearchIndex();
+                    insertHerbImages();
+                    done();
                 });
-            });
-        } else {
-            console.log('食谱数据已存在, 跳过初始化');
-        }
-    });
+            } else {
+                console.log('药材数据已存在, 修复缺失图片...');
+                fixMissingImages(sampleHerbs);
+                done();
+            }
+        });
+    }
 
-    insertQuizData();
+    function insertRecipes(done) {
+        db.get('SELECT COUNT(*) as cnt FROM recipes', (err, row) => {
+            if (row && row.cnt === 0) {
+                const recipeStmt = db.prepare(`INSERT OR IGNORE INTO recipes
+                    (title, content, ingredients, efficacy, creator_id, is_published)
+                    VALUES (?, ?, ?, ?, ?, ?)`);
+                sampleRecipes.forEach(r => recipeStmt.run(r.title, r.content, r.ingredients, r.efficacy, r.creator_id, r.is_published));
+                recipeStmt.finalize(() => {
+                    console.log('示例食谱数据已插入');
+                    db.get('SELECT COUNT(*) as cnt FROM herb_recipe_relation', (err2, row2) => {
+                        if (row2 && row2.cnt === 0) {
+                            db.all('SELECT id, title FROM recipes', [], (err3, recipes) => {
+                                if (err3 || !recipes) { done(); return; }
+                                const titleToId = {};
+                                recipes.forEach(r => { titleToId[r.title] = r.id; });
+                                const relStmt = db.prepare('INSERT OR IGNORE INTO herb_recipe_relation (herb_id, recipe_id) VALUES (?, ?)');
+                                sampleRecipes.forEach(sr => {
+                                    if (sr.herb_ids && titleToId[sr.title]) {
+                                        sr.herb_ids.forEach(hid => relStmt.run(hid, titleToId[sr.title]));
+                                    }
+                                });
+                                relStmt.finalize(() => { console.log('食谱-药材关联已建立'); done(); });
+                            });
+                        } else {
+                            done();
+                        }
+                    });
+                });
+            } else {
+                console.log('食谱数据已存在, 跳过初始化');
+                done();
+            }
+        });
+    }
+
+    insertHerbs(() => insertRecipes(() => insertQuizData()));
 }
 
 function insertQuizData() {
@@ -381,7 +402,7 @@ function insertQuizData() {
         { name: '中医药文化帆布袋', description: '手绘中药材图案环保帆布袋', image_url: '', points_cost: 200, stock: 100 },
         { name: '养生茶饮礼盒', description: '含五指毛桃、灵芝、石斛等养生茶包', image_url: '', points_cost: 800, stock: 15 },
         { name: '中医经络图挂画', description: '精美人体经络穴位图，适合家居装饰', image_url: '', points_cost: 300, stock: 30 },
-        { name: '道地药材明信片', description: '12张手绘广东道地药材明信片套装', image_cost: 150, points_cost: 150, stock: 80 }
+        { name: '道地药材明信片', description: '12张手绘广东道地药材明信片套装', image_url: '', points_cost: 150, stock: 80 }
     ];
 
     db.get('SELECT COUNT(*) as cnt FROM quiz_shop_items', (err, row) => {
@@ -401,21 +422,30 @@ function fixMissingImages(sampleHerbs) {
 
     db.all('SELECT id, name, image_url FROM herbs', (err, herbs) => {
         if (err || !herbs) return;
+        // 修复:在所有异步更新完成后才打印计数,避免提前打印 0
+        let pending = herbs.length;
         let fixed = 0;
+        const done = () => {
+            if (--pending === 0 && fixed > 0) {
+                console.log('修复了 ' + fixed + ' 个药材的图片');
+            }
+        };
         herbs.forEach(herb => {
             if (!herb.image_url && herbNameToImage[herb.name]) {
                 db.run('UPDATE herbs SET image_url = ? WHERE id = ?', [herbNameToImage[herb.name], herb.id], () => {
                     fixed++;
+                    done();
                 });
+            } else {
+                done();
             }
         });
-        if (fixed > 0) console.log('修复了 ' + fixed + ' 个药材的图片');
-    });
 
-    db.get('SELECT COUNT(*) as cnt FROM herb_images', (err, row) => {
-        if (row && row.cnt === 0) {
-            insertHerbImages();
-        }
+        db.get('SELECT COUNT(*) as cnt FROM herb_images', (err2, row) => {
+            if (row && row.cnt === 0) {
+                insertHerbImages();
+            }
+        });
     });
 }
 
@@ -473,7 +503,7 @@ function rebuildSearchIndex() {
         let pending = herbs.length;
         herbs.forEach(h => {
             const keywords = `${h.name} ${h.alias || ''} ${h.origin} ${h.nature} ${h.efficacy}`;
-            db.run('INSERT OR IGNORE INTO search_index (herb_id, keywords, content) VALUES (?, ?, ?)', 
+            db.run('INSERT OR IGNORE INTO search_index (herb_id, keywords, content) VALUES (?, ?, ?)',
                 [h.id, keywords, JSON.stringify(h)], () => {
                     if (--pending === 0) console.log('搜索索引已建立');
                 });

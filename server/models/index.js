@@ -64,14 +64,15 @@ const Herb = {
     },
     create: (data, callback) => {
         const { name, alias, origin, nature, meridian, efficacy, indication, image_url, creator_id } = data;
-        db.run(`INSERT INTO herbs (name, alias, origin, nature, meridian, efficacy, indication, image_url, creator_id) 
+        db.run(`INSERT INTO herbs (name, alias, origin, nature, meridian, efficacy, indication, image_url, creator_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [name, alias, origin, nature, meridian, efficacy, indication, image_url || null, creator_id], function(err) {
                 if (!err) {
                     const keywords = `${name} ${alias || ''} ${origin} ${nature} ${efficacy}`;
                     db.run('INSERT OR IGNORE INTO search_index (herb_id, keywords) VALUES (?, ?)', [this.lastID, keywords]);
                 }
-                callback(err, this);
+                // 修复:显式传出 lastID,避免回调里 this 上下文丢失导致 id 为 undefined
+                callback(err, err ? null : { id: this.lastID, lastID: this.lastID });
             });
     },
     update: (id, data, callback) => {
@@ -109,9 +110,11 @@ const Video = {
     },
     create: (data, callback) => {
         const { title, description, file_path, file_name, thumbnail, uploader_id } = data;
-        db.run(`INSERT INTO videos (title, description, file_path, file_name, thumbnail, uploader_id) 
+        db.run(`INSERT INTO videos (title, description, file_path, file_name, thumbnail, uploader_id)
                 VALUES (?, ?, ?, ?, ?, ?)`,
-            [title, description, file_path, file_name, thumbnail, uploader_id], callback);
+            [title, description, file_path, file_name, thumbnail, uploader_id], function(err) {
+                callback(err, err ? null : { id: this.lastID, lastID: this.lastID });
+            });
     },
     update: (id, data, callback) => {
         const { title, description } = data;
@@ -155,9 +158,11 @@ const Recipe = {
     },
     create: (data, callback) => {
         const { title, content, ingredients, efficacy, is_published, creator_id } = data;
-        db.run(`INSERT INTO recipes (title, content, ingredients, efficacy, is_published, creator_id) 
+        db.run(`INSERT INTO recipes (title, content, ingredients, efficacy, is_published, creator_id)
                 VALUES (?, ?, ?, ?, ?, ?)`,
-            [title, content, ingredients, efficacy, is_published ? 1 : 0, creator_id], callback);
+            [title, content, ingredients, efficacy, is_published ? 1 : 0, creator_id], function(err) {
+                callback(err, err ? null : { id: this.lastID, lastID: this.lastID });
+            });
     },
     update: (id, data, callback) => {
         const { title, content, ingredients, efficacy, is_published } = data;

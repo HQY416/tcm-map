@@ -1,9 +1,18 @@
 const express = require('express');
 const db = require('../init-db');
+const { verifyVisitorId } = require('../middleware/auth');
 const router = express.Router();
 
+// 返回经过签名校验的 raw visitor_id;无效签名返回 'anonymous'(只读安全)
 function getVisitorId(req) {
-    return req.headers['x-visitor-id'] || req.query.visitor_id || 'anonymous';
+    const raw = req.headers['x-visitor-id'] || req.query.visitor_id || 'anonymous';
+    return verifyVisitorId(raw) || 'anonymous';
+}
+
+// 返回签名校验后的 raw visitor_id,无效则返回 null(用于必须确认身份的写操作)
+function getVerifiedVisitorId(req) {
+    const raw = req.headers['x-visitor-id'] || req.query.visitor_id || req.body.visitor_id;
+    return verifyVisitorId(raw);
 }
 
 router.get('/questions', function(req, res) {
@@ -43,7 +52,11 @@ router.get('/questions', function(req, res) {
 });
 
 router.post('/answer', function(req, res) {
-    var visitorId = getVisitorId(req);
+    // 修复:答题涉及积分,必须验证 visitor_id 签名,防止冒充他人
+    var visitorId = getVerifiedVisitorId(req);
+    if (!visitorId) {
+        return res.json({ success: false, code: 'INVALID_VISITOR', message: '访客标识无效,请刷新页面重试' });
+    }
     var questionId = req.body.question_id;
     var selectedIndex = req.body.selected_index;
 
@@ -127,7 +140,11 @@ router.get('/shop', function(req, res) {
 });
 
 router.post('/redeem', function(req, res) {
-    var visitorId = getVisitorId(req);
+    // 修复:兑换涉及积分消耗,必须验证 visitor_id 签名
+    var visitorId = getVerifiedVisitorId(req);
+    if (!visitorId) {
+        return res.json({ success: false, code: 'INVALID_VISITOR', message: '访客标识无效,请刷新页面重试' });
+    }
     var itemId = req.body.item_id;
 
     if (!itemId) return res.json({ success: false, message: '请选择兑换商品' });
@@ -143,23 +160,36 @@ router.post('/redeem', function(req, res) {
                 return res.json({ success: false, message: '积分不足，还需要' + (item.points_cost - currentPoints) + '积分' });
             }
 
+            // 修复:用单条事务 SQL 保证原子性,任一步失败整体回滚
             db.serialize(function() {
-                db.run('BEGIN TRANSACTION');
-                db.run('UPDATE quiz_points SET total_points = total_points - ?, updated_at = CURRENT_TIMESTAMP WHERE visitor_id = ?',
-                    [item.points_cost, visitorId], function(err3) {
-                        if (err3) { db.run('ROLLBACK'); return res.json({ success: false, message: '积分扣除失败' }); }
+                db.run('BEGIN TRANSACTION', function(beginErr) {
+                    if (beginErr) return res.json({ success: false, message: '事务启动失败' });
 
-                        db.run('UPDATE quiz_shop_items SET stock = stock - 1 WHERE id = ? AND stock > 0', [itemId], function(err4) {
-                            if (err4 || this.changes === 0) { db.run('ROLLBACK'); return res.json({ success: false, message: '库存不足' }); }
+                    db.run('UPDATE quiz_points SET total_points = total_points - ?, updated_at = CURRENT_TIMESTAMP WHERE visitor_id = ?',
+                        [item.points_cost, visitorId], function(err3) {
+                            if (err3 || this.changes === 0) {
+                                db.run('ROLLBACK');
+                                return res.json({ success: false, message: '积分扣除失败' });
+                            }
 
-                            db.run('INSERT INTO quiz_redemptions (visitor_id, item_id, points_cost, status) VALUES (?, ?, ?, ?)',
-                                [visitorId, itemId, item.points_cost, 'confirmed'], function(err5) {
-                                    if (err5) { db.run('ROLLBACK'); return res.json({ success: false, message: '兑换记录创建失败' }); }
-                                    db.run('COMMIT');
-                                    res.json({ success: true, message: '兑换成功！', data: { item_name: item.name, points_cost: item.points_cost, remaining_points: currentPoints - item.points_cost } });
-                                });
+                            db.run('UPDATE quiz_shop_items SET stock = stock - 1 WHERE id = ? AND stock > 0', [itemId], function(err4) {
+                                if (err4 || this.changes === 0) {
+                                    db.run('ROLLBACK');
+                                    return res.json({ success: false, message: '库存不足' });
+                                }
+
+                                db.run('INSERT INTO quiz_redemptions (visitor_id, item_id, points_cost, status) VALUES (?, ?, ?, ?)',
+                                    [visitorId, itemId, item.points_cost, 'confirmed'], function(err5) {
+                                        if (err5) {
+                                            db.run('ROLLBACK');
+                                            return res.json({ success: false, message: '兑换记录创建失败' });
+                                        }
+                                        db.run('COMMIT');
+                                        res.json({ success: true, message: '兑换成功！', data: { item_name: item.name, points_cost: item.points_cost, remaining_points: currentPoints - item.points_cost } });
+                                    });
+                            });
                         });
-                    });
+                });
             });
         });
     });

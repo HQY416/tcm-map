@@ -35,13 +35,15 @@ var upload = multer({
     }
 });
 
-const SENSITIVE_WORDS = [' fuck ', ' shit ', '傻逼', '操你'];
+// 修复:敏感词去除首尾空格,大小写不敏感,匹配更可靠
+const SENSITIVE_WORDS = ['fuck', 'shit', '傻逼', '操你', '草泥马', '去死'];
 
 function filterSensitiveWords(text) {
     if (!text) return text;
     let result = text;
     SENSITIVE_WORDS.forEach(word => {
-        result = result.split(word).join('***');
+        const re = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        result = result.replace(re, '***');
     });
     return result;
 }
@@ -171,32 +173,38 @@ router.post('/:id/reply', authenticateToken, (req, res) => {
         }
 
         db.serialize(() => {
-            db.run('BEGIN TRANSACTION');
-
-            db.run(
-                'INSERT INTO feedback_replies (feedback_id, admin_id, content) VALUES (?, ?, ?)',
-                [feedbackId, adminId, content],
-                function (err2) {
-                    if (err2) {
-                        db.run('ROLLBACK');
-                        return res.json({ success: false, message: '回复失败' });
-                    }
-
-                    db.run(
-                        'UPDATE feedback SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                        ['processing', feedbackId],
-                        function (err3) {
-                            if (err3) {
-                                db.run('ROLLBACK');
-                                return res.json({ success: false, message: '更新反馈状态失败' });
-                            }
-
-                            db.run('COMMIT');
-                            res.json({ success: true, message: '回复成功', replyId: this.lastID });
-                        }
-                    );
+            db.run('BEGIN TRANSACTION', function (beginErr) {
+                if (beginErr) {
+                    return res.json({ success: false, message: '事务启动失败' });
                 }
-            );
+
+                db.run(
+                    'INSERT INTO feedback_replies (feedback_id, admin_id, content) VALUES (?, ?, ?)',
+                    [feedbackId, adminId, content],
+                    function (err2) {
+                        if (err2) {
+                            db.run('ROLLBACK');
+                            return res.json({ success: false, message: '回复失败' });
+                        }
+                        // 修复:在 INSERT 回调中保存 lastID,UPDATE 的 this.lastID 无意义
+                        const replyId = this.lastID;
+
+                        db.run(
+                            'UPDATE feedback SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                            ['processing', feedbackId],
+                            function (err3) {
+                                if (err3) {
+                                    db.run('ROLLBACK');
+                                    return res.json({ success: false, message: '更新反馈状态失败' });
+                                }
+
+                                db.run('COMMIT');
+                                res.json({ success: true, message: '回复成功', replyId: replyId });
+                            }
+                        );
+                    }
+                );
+            });
         });
     });
 });

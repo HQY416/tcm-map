@@ -1,6 +1,15 @@
 node_modules/
 server/data/*.db
+server/data/*.db-journal
 .DS_Store
 Thumbs.db
 *.log
 .env
+
+# 用户上传文件(保留目录占位符)
+server/uploads/herbs/*
+!server/uploads/herbs/.gitkeep
+server/uploads/feedback/*
+!server/uploads/feedback/.gitkeep
+server/uploads/*.mp4
+server/init-uploads/
